@@ -3,6 +3,26 @@ import Link from "next/link";
 export default function UpgradeSuccessPage() {
   return (
     <main className="min-h-screen bg-white text-slate-900 flex flex-col items-center justify-center px-6 py-24">
+      <style>{`
+        @keyframes circle-pop {
+          0%   { transform: scale(0); opacity: 0; }
+          60%  { transform: scale(1.15); opacity: 1; }
+          80%  { transform: scale(0.95); }
+          100% { transform: scale(1); }
+        }
+        @keyframes check-draw {
+          to { stroke-dashoffset: 0; }
+        }
+        .animate-circle-pop {
+          animation: circle-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        .animate-check-draw {
+          stroke-dasharray: 50;
+          stroke-dashoffset: 50;
+          animation: check-draw 0.4s ease-out 0.35s forwards;
+        }
+      `}</style>
+
       {/* ロゴ */}
       <a
         href="/"
@@ -13,9 +33,25 @@ export default function UpgradeSuccessPage() {
       </a>
 
       <div className="w-full max-w-md text-center">
-        {/* 完了アイコン */}
-        <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
-          <span className="text-green-600 text-2xl font-bold">✓</span>
+        {/* 完了アイコン（circle pop + checkmark stroke draw） */}
+        <div className="w-16 h-16 mx-auto mb-6">
+          <svg viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle
+              cx="26"
+              cy="26"
+              r="26"
+              fill="#dcfce7"
+              className="animate-circle-pop"
+            />
+            <path
+              d="M14 27l9 9 16-17"
+              stroke="#16a34a"
+              strokeWidth="3.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="animate-check-draw"
+            />
+          </svg>
         </div>
 
         <h1
