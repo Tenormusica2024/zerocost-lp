@@ -1,57 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
-// ---- 定数定義 ----
+// ---- ロケール型 ----
 
-const FEATURES = [
-  {
-    icon: "⇄",
-    title: "Auto-Failover",
-    description:
-      "When Groq hits a rate limit, zerocost silently switches to Cerebras or HuggingFace. Your requests keep flowing — no retries, no error handling needed.",
-  },
-  {
-    icon: "◎",
-    title: "OpenAI Compatible",
-    description:
-      "Drop-in replacement for the OpenAI client. Change one line — the base URL — and every model call works across all providers.",
-  },
-  {
-    icon: "⊞",
-    title: "Bring Your Own Keys",
-    description:
-      "Connect your own Groq, Cerebras, and HuggingFace API keys. Your credentials are encrypted with AES-256-GCM and never logged.",
-  },
-  {
-    icon: "⊡",
-    title: "Edge-Native Speed",
-    description:
-      "Deployed on Cloudflare Workers — sub-50ms routing overhead from 300+ locations worldwide. No cold starts, no server maintenance.",
-  },
-];
+type Locale = "ja" | "en";
 
-const QUICKSTART_STEPS = [
-  {
-    step: "01",
-    title: "Get your free key",
-    description: "Enter your email below. Your zc-key arrives instantly.",
-    code: "zc-xxxxxxxxxxxxxxxxxxxxxxxx",
-  },
-  {
-    step: "02",
-    title: "Register your providers",
-    description: "Send your Groq, Cerebras, or HuggingFace keys once.",
-    code: `curl -X POST https://zerocost-router.dragonrondo.workers.dev/v1/keys/providers \\
+// ---- 定数 ----
+
+const ROUTER_BASE =
+  process.env.NEXT_PUBLIC_ROUTER_BASE ??
+  "https://zerocost-router.dragonrondo.workers.dev";
+
+// クイックスタートのコードスニペット（ロケール非依存）
+const QUICKSTART_CODES = [
+  "zc-xxxxxxxxxxxxxxxxxxxxxxxx",
+  `curl -X POST https://zerocost-router.dragonrondo.workers.dev/v1/keys/providers \\
   -H "Authorization: Bearer zc-your-key" \\
   -H "Content-Type: application/json" \\
   -d '{"provider_id":"groq","api_key":"gsk_..."}'`,
-  },
-  {
-    step: "03",
-    title: "Use as OpenAI API",
-    description: "Point your client at zerocost. Done.",
-    code: `from openai import OpenAI
+  `from openai import OpenAI
 
 client = OpenAI(
   base_url="https://zerocost-router.dragonrondo.workers.dev/v1",
@@ -62,91 +30,11 @@ response = client.chat.completions.create(
   model="llama-3.3-70b-versatile",
   messages=[{"role": "user", "content": "Hello!"}],
 )`,
-  },
 ];
 
-const PRICING_TIERS = [
-  {
-    name: "Free",
-    price: "¥0",
-    period: "forever",
-    description: "For personal projects and exploration.",
-    features: [
-      "1,000 requests / month",
-      "3 providers (Groq, Cerebras, HF)",
-      "Auto-failover",
-      "OpenAI-compatible API",
-    ],
-    cta: "Get started free",
-    ctaStyle: "border",
-    badge: null,
-    comingSoon: false,
-  },
-  {
-    name: "Basic",
-    price: "¥500",
-    period: "/ month",
-    description: "For developers building apps.",
-    features: [
-      "5,000 requests / month",
-      "5 providers",
-      "Auto-failover",
-      "OpenAI-compatible API",
-      "Priority routing",
-    ],
-    cta: "Coming soon",
-    ctaStyle: "disabled",
-    badge: "Coming soon",
-    comingSoon: true,
-  },
-  {
-    name: "Pro",
-    price: "¥1,500",
-    period: "/ month",
-    description: "For teams and production workloads.",
-    features: [
-      "Unlimited requests",
-      "All providers",
-      "Smart routing (quota-aware)",
-      "OpenAI-compatible API",
-      "SLA-backed uptime",
-      "Usage analytics",
-    ],
-    cta: "Coming soon",
-    ctaStyle: "disabled",
-    badge: "Coming soon",
-    comingSoon: true,
-    highlighted: true,
-  },
-];
-
-const FAQ_ITEMS = [
-  {
-    q: "Which models are available?",
-    a: "Any model your registered providers support — including Llama 3.3 70B via Groq, Llama 3.1 70B via Cerebras, and a range of HuggingFace Inference models. zerocost doesn't restrict which model ID you pass.",
-  },
-  {
-    q: "Are my API keys safe?",
-    a: "Yes. Provider keys are encrypted with AES-256-GCM before storage. zerocost never logs request bodies or response content. Your keys cannot be retrieved in plaintext after registration.",
-  },
-  {
-    q: "What happens when all providers hit rate limits?",
-    a: "zerocost returns a clear error rather than silently failing. Rate limit flags reset automatically within 60 seconds, so subsequent requests will route normally.",
-  },
-  {
-    q: "Do I need a credit card?",
-    a: "No. The Free tier is completely free, no card required. Basic and Pro plans are in development — you'll be notified when they launch.",
-  },
-];
-
-// ---- コンポーネント ----
-
-const ROUTER_BASE =
-  process.env.NEXT_PUBLIC_ROUTER_BASE ??
-  "https://zerocost-router.dragonrondo.workers.dev";
-
-// AIエージェント向けセットアッププロンプト（コピーして任意のAIに貼り付けるだけで自動セットアップ）
-const AGENT_PROMPT = `Set up zerocost-router for me.
+// AIエージェント向けセットアッププロンプト（ロケール別）
+const AGENT_PROMPT: Record<Locale, string> = {
+  en: `Set up zerocost-router for me.
 
 ## What is zerocost-router?
 A proxy API that provides an OpenAI-compatible endpoint backed by free-tier LLM providers (Groq, Cerebras, HuggingFace).
@@ -178,7 +66,472 @@ base_url = "https://zerocost-router.dragonrondo.workers.dev/v1"
 api_key  = "<zc-key>"
 Use these settings in place of the standard OpenAI client configuration.
 
-Once done, let me know the zc-key you received.`;
+Once done, let me know the zc-key you received.`,
+
+  ja: `zerocost-routerをセットアップしてください。
+
+## zerocost-routerとは？
+Groq・Cerebras・HuggingFaceの無料枠を使ったOpenAI互換プロキシAPIです。
+エンドポイントベースURL: https://zerocost-router.dragonrondo.workers.dev/v1
+
+## セットアップ手順
+
+### Step 1: zc-keyを発行する
+curl -s -X POST https://zerocost-router.dragonrondo.workers.dev/v1/keys
+→ レスポンスの "key" の値を保存してください（例: zc-xxxxxxxx...）
+
+### Step 2: 無料のGroq APIキーを取得する
+https://console.groq.com でサインアップしてAPIキーを生成してください。
+
+### Step 3: プロバイダーキーを登録する
+curl -X POST https://zerocost-router.dragonrondo.workers.dev/v1/keys/providers \\
+  -H "Authorization: Bearer <zc-key>" \\
+  -H "Content-Type: application/json" \\
+  -d '{"provider_id":"groq","api_key":"<groq-api-key>","priority":0}'
+
+### Step 4: 動作確認する
+curl -X POST https://zerocost-router.dragonrondo.workers.dev/v1/chat/completions \\
+  -H "Authorization: Bearer <zc-key>" \\
+  -H "Content-Type: application/json" \\
+  -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"Hello"}],"max_tokens":50}'
+
+### Step 5: OpenAI SDKで使う
+base_url = "https://zerocost-router.dragonrondo.workers.dev/v1"
+api_key  = "<zc-key>"
+標準のOpenAIクライアント設定の代わりにこれらを使ってください。
+
+完了したら、取得したzc-keyを教えてください。`,
+};
+
+// ---- 型定義 ----
+
+interface Feature {
+  icon: string;
+  title: string;
+  description: string;
+}
+
+interface QuickstartStep {
+  step: string;
+  title: string;
+  description: string;
+}
+
+interface PricingTier {
+  name: string;
+  price: string;
+  period: string;
+  description: string;
+  features: string[];
+  cta: string;
+  ctaStyle: string;
+  badge: string | null;
+  comingSoon: boolean;
+  highlighted?: boolean;
+}
+
+interface FaqItem {
+  q: string;
+  a: string;
+}
+
+interface Messages {
+  tagline: string;
+  navCta: string;
+  heroBadge: string;
+  heroTitle1: string;
+  heroTitle2: string;
+  heroSub: string;
+  featuresTitle: string;
+  featuresSub: string;
+  features: Feature[];
+  quickstartSteps: QuickstartStep[];
+  getKeyTitle: string;
+  getKeySub: string;
+  keyReadyLabel: string;
+  keyReadyWarning: string;
+  copiedLabel: string;
+  copyLabel: string;
+  emailPlaceholder: string;
+  submittingLabel: string;
+  getKeyBtnLabel: string;
+  noSpam: string;
+  agentTitle: string;
+  agentSub: string;
+  agentPromptLabel: string;
+  agentWorksWith: string;
+  usageTitle: string;
+  usageSub: string;
+  usageMonthly: string;
+  usageUnlimited: string;
+  usageReqUsed: (n: number) => string;
+  usageRemaining: (n: number) => string;
+  resetDate: (isoStr: string) => string;
+  checkAnotherKey: string;
+  checkingLabel: string;
+  checkBtnLabel: string;
+  upgradeCtaLabel: string;
+  pricingTitle: string;
+  pricingSub: string;
+  pricingPopular: string;
+  pricingTiers: PricingTier[];
+  faqTitle: string;
+  faqItems: FaqItem[];
+  finalCtaTitle: string;
+  finalCtaSub: string;
+  finalCtaBtn: string;
+  footerApiStatus: string;
+  errorFallback: string;
+}
+
+// ---- 翻訳テキスト ----
+
+const MESSAGES: Record<Locale, Messages> = {
+  en: {
+    tagline: "— free LLM router",
+    navCta: "Get started free",
+    heroBadge: "OpenAI-compatible · Groq · Cerebras · HuggingFace",
+    heroTitle1: "Route LLMs for free.",
+    heroTitle2: "Zero cost, zero friction.",
+    heroSub:
+      "One API key. Auto-failover across the fastest free-tier LLM providers. Drop-in OpenAI replacement — change one line of code.",
+    featuresTitle: "Built for developers who don't want to pay for inference",
+    featuresSub:
+      "Free tiers from Groq, Cerebras, and HuggingFace add up to serious throughput — if you can route around the rate limits.",
+    features: [
+      {
+        icon: "⇄",
+        title: "Auto-Failover",
+        description:
+          "When Groq hits a rate limit, zerocost silently switches to Cerebras or HuggingFace. Your requests keep flowing — no retries, no error handling needed.",
+      },
+      {
+        icon: "◎",
+        title: "OpenAI Compatible",
+        description:
+          "Drop-in replacement for the OpenAI client. Change one line — the base URL — and every model call works across all providers.",
+      },
+      {
+        icon: "⊞",
+        title: "Bring Your Own Keys",
+        description:
+          "Connect your own Groq, Cerebras, and HuggingFace API keys. Your credentials are encrypted with AES-256-GCM and never logged.",
+      },
+      {
+        icon: "⊡",
+        title: "Edge-Native Speed",
+        description:
+          "Deployed on Cloudflare Workers — sub-50ms routing overhead from 300+ locations worldwide. No cold starts, no server maintenance.",
+      },
+    ],
+    quickstartSteps: [
+      {
+        step: "01",
+        title: "Get your free key",
+        description: "Enter your email below. Your zc-key arrives instantly.",
+      },
+      {
+        step: "02",
+        title: "Register your providers",
+        description:
+          "Send your Groq, Cerebras, or HuggingFace keys once.",
+      },
+      {
+        step: "03",
+        title: "Use as OpenAI API",
+        description: "Point your client at zerocost. Done.",
+      },
+    ],
+    getKeyTitle: "Get your free API key",
+    getKeySub:
+      "Enter your email. Your zc-key is generated instantly — no credit card, no waitlist.",
+    keyReadyLabel: "Your API key is ready",
+    keyReadyWarning: "Save this key — it won't be shown again.",
+    copiedLabel: "Copied!",
+    copyLabel: "Copy",
+    emailPlaceholder: "you@example.com",
+    submittingLabel: "Generating…",
+    getKeyBtnLabel: "Get free key",
+    noSpam: "No spam. Used only to identify your key.",
+    agentTitle: "Use with AI agents",
+    agentSub:
+      "Copy the prompt below and paste it into your AI agent. It will set up zerocost automatically — no manual steps needed.",
+    agentPromptLabel: "setup prompt",
+    agentWorksWith:
+      "Works with any OpenAI-compatible AI agent or coding assistant.",
+    usageTitle: "Check your usage",
+    usageSub:
+      "Enter your zc-key to see how many requests you've used this month.",
+    usageMonthly: "Monthly usage",
+    usageUnlimited: "Unlimited",
+    usageReqUsed: (n) => `${n.toLocaleString()} requests used`,
+    usageRemaining: (n) => `${n.toLocaleString()} remaining`,
+    resetDate: (isoStr) =>
+      `Resets ${new Date(isoStr).toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+      })}`,
+    checkAnotherKey: "Check another key",
+    checkingLabel: "Checking…",
+    checkBtnLabel: "Check",
+    upgradeCtaLabel: "Upgrade your plan →",
+    pricingTitle: "Pricing",
+    pricingSub: "Start free. Scale when you need more.",
+    pricingPopular: "Popular",
+    pricingTiers: [
+      {
+        name: "Free",
+        price: "¥0",
+        period: "forever",
+        description: "For personal projects and exploration.",
+        features: [
+          "1,000 requests / month",
+          "3 providers (Groq, Cerebras, HF)",
+          "Auto-failover",
+          "OpenAI-compatible API",
+        ],
+        cta: "Get started free",
+        ctaStyle: "primary",
+        badge: null,
+        comingSoon: false,
+      },
+      {
+        name: "Basic",
+        price: "¥500",
+        period: "/ month",
+        description: "For developers building apps.",
+        features: [
+          "5,000 requests / month",
+          "5 providers",
+          "Auto-failover",
+          "OpenAI-compatible API",
+          "Priority routing",
+        ],
+        cta: "Coming soon",
+        ctaStyle: "disabled",
+        badge: "Coming soon",
+        comingSoon: true,
+      },
+      {
+        name: "Pro",
+        price: "¥1,500",
+        period: "/ month",
+        description: "For teams and production workloads.",
+        features: [
+          "Unlimited requests",
+          "All providers",
+          "Smart routing (quota-aware)",
+          "OpenAI-compatible API",
+          "SLA-backed uptime",
+          "Usage analytics",
+        ],
+        cta: "Coming soon",
+        ctaStyle: "disabled",
+        badge: "Coming soon",
+        comingSoon: true,
+        highlighted: true,
+      },
+    ],
+    faqTitle: "FAQ",
+    faqItems: [
+      {
+        q: "Which models are available?",
+        a: "Any model your registered providers support — including Llama 3.3 70B via Groq, Llama 3.1 70B via Cerebras, and a range of HuggingFace Inference models. zerocost doesn't restrict which model ID you pass.",
+      },
+      {
+        q: "Are my API keys safe?",
+        a: "Yes. Provider keys are encrypted with AES-256-GCM before storage. zerocost never logs request bodies or response content. Your keys cannot be retrieved in plaintext after registration.",
+      },
+      {
+        q: "What happens when all providers hit rate limits?",
+        a: "zerocost returns a clear error rather than silently failing. Rate limit flags reset automatically within 60 seconds, so subsequent requests will route normally.",
+      },
+      {
+        q: "Do I need a credit card?",
+        a: "No. The Free tier is completely free, no card required. Basic and Pro plans are in development — you'll be notified when they launch.",
+      },
+    ],
+    finalCtaTitle: "Start routing for free",
+    finalCtaSub: "Get your API key in 10 seconds. No card, no waitlist.",
+    finalCtaBtn: "Get your free key →",
+    footerApiStatus: "API Status",
+    errorFallback: "Something went wrong.",
+  },
+
+  ja: {
+    tagline: "— 無料 LLM ルーター",
+    navCta: "無料で始める",
+    heroBadge: "OpenAI互換 · Groq · Cerebras · HuggingFace",
+    heroTitle1: "LLMルーティングを無料で。",
+    heroTitle2: "コストゼロ、手間ゼロ。",
+    heroSub:
+      "APIキー1本で、最速の無料LLMプロバイダーに自動フェイルオーバー。OpenAIの完全互換 — コード1行変えるだけ。",
+    featuresTitle: "推論コストを払いたくない開発者のために",
+    featuresSub:
+      "Groq・Cerebras・HuggingFaceの無料枠を組み合わせれば、レートリミットを回避しながら本格的なスループットが得られます。",
+    features: [
+      {
+        icon: "⇄",
+        title: "自動フェイルオーバー",
+        description:
+          "Groqがレートリミットに達すると、zerocostはCerebrasまたはHuggingFaceにサイレントで切り替えます。リトライもエラーハンドリングも不要。",
+      },
+      {
+        icon: "◎",
+        title: "OpenAI互換",
+        description:
+          "OpenAIクライアントのドロップイン置き換え。ベースURLを1行変えるだけで、すべてのモデル呼び出しが全プロバイダーで動作します。",
+      },
+      {
+        icon: "⊞",
+        title: "自前のキーを使用",
+        description:
+          "Groq・Cerebras・HuggingFaceのAPIキーを接続できます。資格情報はAES-256-GCMで暗号化され、ログに記録されることはありません。",
+      },
+      {
+        icon: "⊡",
+        title: "エッジネイティブな速度",
+        description:
+          "Cloudflare Workers上にデプロイ — 世界300以上の拠点から50ms未満のルーティングオーバーヘッド。コールドスタートなし、サーバーメンテナンス不要。",
+      },
+    ],
+    quickstartSteps: [
+      {
+        step: "01",
+        title: "無料キーを取得",
+        description: "下でメールを入力。zc-keyが即時発行されます。",
+      },
+      {
+        step: "02",
+        title: "プロバイダーを登録",
+        description:
+          "GroqやCerebrasやHuggingFaceのキーを1回送信するだけ。",
+      },
+      {
+        step: "03",
+        title: "OpenAI APIとして使用",
+        description: "クライアントのエンドポイントをzerocostに向けるだけ。完了。",
+      },
+    ],
+    getKeyTitle: "無料APIキーを取得",
+    getKeySub:
+      "メールアドレスを入力するだけ。zc-keyが即時発行されます — クレジットカード不要、ウェイティングリストなし。",
+    keyReadyLabel: "APIキーの準備ができました",
+    keyReadyWarning: "このキーを保存してください — 再表示されません。",
+    copiedLabel: "コピー完了!",
+    copyLabel: "コピー",
+    emailPlaceholder: "you@example.com",
+    submittingLabel: "発行中…",
+    getKeyBtnLabel: "無料キーを取得",
+    noSpam: "スパムなし。キーの識別にのみ使用します。",
+    agentTitle: "AIエージェントで使う",
+    agentSub:
+      "下のプロンプトをコピーしてAIエージェントに貼り付けてください。zerocostを自動的にセットアップします — 手動作業不要。",
+    agentPromptLabel: "setup prompt",
+    agentWorksWith:
+      "OpenAI互換の任意のAIエージェントやコーディングアシスタントで動作します。",
+    usageTitle: "使用量を確認",
+    usageSub:
+      "zc-keyを入力して、今月の使用リクエスト数を確認できます。",
+    usageMonthly: "月間使用量",
+    usageUnlimited: "無制限",
+    usageReqUsed: (n) => `${n.toLocaleString()} リクエスト使用済み`,
+    usageRemaining: (n) => `残り ${n.toLocaleString()}`,
+    resetDate: (isoStr) =>
+      `${new Date(isoStr).toLocaleDateString("ja-JP", {
+        month: "long",
+        day: "numeric",
+      })}にリセット`,
+    checkAnotherKey: "別のキーを確認",
+    checkingLabel: "確認中…",
+    checkBtnLabel: "確認",
+    upgradeCtaLabel: "プランをアップグレード →",
+    pricingTitle: "料金プラン",
+    pricingSub: "無料から始めて、必要に応じてスケールアップ。",
+    pricingPopular: "人気",
+    pricingTiers: [
+      {
+        name: "Free",
+        price: "¥0",
+        period: "永久",
+        description: "個人プロジェクトや試用に。",
+        features: [
+          "1,000 リクエスト / 月",
+          "3プロバイダー (Groq, Cerebras, HF)",
+          "自動フェイルオーバー",
+          "OpenAI互換API",
+        ],
+        cta: "無料で始める",
+        ctaStyle: "primary",
+        badge: null,
+        comingSoon: false,
+      },
+      {
+        name: "Basic",
+        price: "¥500",
+        period: "/ 月",
+        description: "アプリを開発する開発者向け。",
+        features: [
+          "5,000 リクエスト / 月",
+          "5プロバイダー",
+          "自動フェイルオーバー",
+          "OpenAI互換API",
+          "優先ルーティング",
+        ],
+        cta: "近日公開",
+        ctaStyle: "disabled",
+        badge: "近日公開",
+        comingSoon: true,
+      },
+      {
+        name: "Pro",
+        price: "¥1,500",
+        period: "/ 月",
+        description: "チームや本番ワークロード向け。",
+        features: [
+          "無制限リクエスト",
+          "全プロバイダー",
+          "スマートルーティング（クォータ認識）",
+          "OpenAI互換API",
+          "SLA保証アップタイム",
+          "使用量アナリティクス",
+        ],
+        cta: "近日公開",
+        ctaStyle: "disabled",
+        badge: "近日公開",
+        comingSoon: true,
+        highlighted: true,
+      },
+    ],
+    faqTitle: "よくある質問",
+    faqItems: [
+      {
+        q: "利用可能なモデルは？",
+        a: "登録したプロバイダーがサポートするモデルはすべて利用可能です — Groq経由のLlama 3.3 70B、Cerebras経由のLlama 3.1 70B、HuggingFaceの各種推論モデルを含みます。zerocostは渡すモデルIDを制限しません。",
+      },
+      {
+        q: "APIキーは安全？",
+        a: "はい。プロバイダーキーはAES-256-GCMで暗号化して保存されます。zerocostはリクエストボディやレスポンス内容をログに記録しません。登録後、キーは平文で取得できません。",
+      },
+      {
+        q: "全プロバイダーがレートリミットに達したら？",
+        a: "zerocostはサイレントに失敗するのではなく、明確なエラーを返します。レートリミットフラグは60秒以内に自動的にリセットされるため、後続のリクエストは正常にルーティングされます。",
+      },
+      {
+        q: "クレジットカードは必要？",
+        a: "不要です。Freeプランは完全無料でカード不要です。BasicとProプランは開発中 — リリース時に通知します。",
+      },
+    ],
+    finalCtaTitle: "無料でルーティングを始める",
+    finalCtaSub:
+      "10秒でAPIキーを取得。クレジットカード不要、ウェイティングリストなし。",
+    finalCtaBtn: "無料キーを取得 →",
+    footerApiStatus: "API ステータス",
+    errorFallback: "エラーが発生しました。",
+  },
+};
+
+// ---- APIレスポンス型 ----
 
 interface UsageData {
   plan: string;
@@ -188,17 +541,24 @@ interface UsageData {
   reset_at: string;
 }
 
+// ---- コンポーネント ----
+
 export default function HomePage() {
+  const [locale, setLocale] = useState<Locale>("en");
+
+  // ブラウザの言語設定を自動検出（日本語ユーザーはjaに切り替え）
+  useEffect(() => {
+    if (navigator.language.startsWith("ja")) setLocale("ja");
+  }, []);
+
+  const m = MESSAGES[locale];
+
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-
-  // AIエージェント向けプロンプトコピー
   const [agentPromptCopied, setAgentPromptCopied] = useState(false);
-
-  // 使用量確認
   const [usageKey, setUsageKey] = useState("");
   const [usageData, setUsageData] = useState<UsageData | null>(null);
   const [usageFetching, setUsageFetching] = useState(false);
@@ -216,10 +576,10 @@ export default function HomePage() {
         body: JSON.stringify({ email: email.trim() }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Something went wrong.");
+      if (!res.ok) throw new Error(data.error ?? m.errorFallback);
       setApiKey(data.key);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+      setError(err instanceof Error ? err.message : m.errorFallback);
     } finally {
       setSubmitting(false);
     }
@@ -233,7 +593,7 @@ export default function HomePage() {
   };
 
   const handleCopyAgentPrompt = async () => {
-    await navigator.clipboard.writeText(AGENT_PROMPT);
+    await navigator.clipboard.writeText(AGENT_PROMPT[locale]);
     setAgentPromptCopied(true);
     setTimeout(() => setAgentPromptCopied(false), 2000);
   };
@@ -248,14 +608,14 @@ export default function HomePage() {
         headers: { Authorization: `Bearer ${usageKey.trim()}` },
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Something went wrong.");
+      if (!res.ok) throw new Error(data.error ?? m.errorFallback);
       // APIレスポンスの最低限の形状チェック（型キャスト前の実行時検証）
       if (typeof data.plan !== "string" || typeof data.used !== "number") {
         throw new Error("Unexpected response from server.");
       }
       setUsageData(data as UsageData);
     } catch (err) {
-      setUsageError(err instanceof Error ? err.message : "Something went wrong.");
+      setUsageError(err instanceof Error ? err.message : m.errorFallback);
     } finally {
       setUsageFetching(false);
     }
@@ -274,10 +634,34 @@ export default function HomePage() {
               zerocost
             </span>
             <span className="hidden sm:inline text-slate-400 text-sm">
-              — free LLM router
+              {m.tagline}
             </span>
           </div>
           <div className="flex items-center gap-6">
+            {/* 言語切り替えボタン */}
+            <div className="flex items-center gap-1 text-sm font-semibold">
+              <button
+                onClick={() => setLocale("ja")}
+                className={`px-1.5 transition-colors ${
+                  locale === "ja"
+                    ? "text-slate-900"
+                    : "text-slate-400 hover:text-slate-600"
+                }`}
+              >
+                JP
+              </button>
+              <span className="text-slate-200">|</span>
+              <button
+                onClick={() => setLocale("en")}
+                className={`px-1.5 transition-colors ${
+                  locale === "en"
+                    ? "text-slate-900"
+                    : "text-slate-400 hover:text-slate-600"
+                }`}
+              >
+                EN
+              </button>
+            </div>
             <a
               href="https://github.com/Tenormusica2024/zerocost-router"
               target="_blank"
@@ -290,7 +674,7 @@ export default function HomePage() {
               href="#get-key"
               className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition-colors"
             >
-              Get started free
+              {m.navCta}
             </a>
           </div>
         </div>
@@ -302,7 +686,7 @@ export default function HomePage() {
         <div className="flex justify-center mb-8">
           <span className="inline-flex items-center gap-2 bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-semibold px-4 py-1.5 rounded-full">
             <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
-            OpenAI-compatible · Groq · Cerebras · HuggingFace
+            {m.heroBadge}
           </span>
         </div>
 
@@ -311,18 +695,17 @@ export default function HomePage() {
           className="text-center text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-tight mb-6 text-slate-900"
           style={{ fontFamily: "var(--font-bricolage)" }}
         >
-          Route LLMs for free.
+          {m.heroTitle1}
           <br />
-          <span className="text-indigo-600">Zero cost, zero friction.</span>
+          <span className="text-indigo-600">{m.heroTitle2}</span>
         </h1>
         <p className="text-center text-xl text-slate-500 max-w-2xl mx-auto mb-12 leading-relaxed">
-          One API key. Auto-failover across the fastest free-tier LLM providers.
-          Drop-in OpenAI replacement — change one line of code.
+          {m.heroSub}
         </p>
 
         {/* 3ステップクイックスタート */}
         <div className="grid md:grid-cols-3 gap-6 mt-16">
-          {QUICKSTART_STEPS.map((s) => (
+          {m.quickstartSteps.map((s, i) => (
             <div key={s.step} className="group">
               <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 h-full hover:border-indigo-200 hover:bg-indigo-50/30 transition-all duration-200">
                 <div className="flex items-center gap-3 mb-4">
@@ -340,7 +723,7 @@ export default function HomePage() {
                   {s.description}
                 </p>
                 <pre className="bg-slate-900 text-green-400 text-xs font-mono rounded-lg p-3 overflow-x-auto leading-relaxed whitespace-pre-wrap break-all">
-                  {s.code}
+                  {QUICKSTART_CODES[i]}
                 </pre>
               </div>
             </div>
@@ -355,14 +738,13 @@ export default function HomePage() {
             className="text-3xl sm:text-4xl font-bold text-center text-slate-900 mb-4"
             style={{ fontFamily: "var(--font-bricolage)" }}
           >
-            Built for developers who don&apos;t want to pay for inference
+            {m.featuresTitle}
           </h2>
           <p className="text-center text-slate-500 mb-14 max-w-xl mx-auto">
-            Free tiers from Groq, Cerebras, and HuggingFace add up to serious
-            throughput — if you can route around the rate limits.
+            {m.featuresSub}
           </p>
           <div className="grid sm:grid-cols-2 gap-6">
-            {FEATURES.map((f) => (
+            {m.features.map((f) => (
               <div
                 key={f.title}
                 className="bg-white rounded-2xl p-8 border border-slate-100 hover:border-indigo-200 hover:shadow-sm transition-all duration-200"
@@ -395,14 +777,21 @@ export default function HomePage() {
             className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4"
             style={{ fontFamily: "var(--font-bricolage)" }}
           >
-            Get your free API key
+            {m.getKeyTitle}
           </h2>
           <p className="text-slate-500 mb-10">
-            Enter your email. Your{" "}
-            <code className="text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded text-sm">
-              zc-key
-            </code>{" "}
-            is generated instantly — no credit card, no waitlist.
+            {m.getKeySub.split("zc-key").map((part, i, arr) =>
+              i < arr.length - 1 ? (
+                <span key={i}>
+                  {part}
+                  <code className="text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded text-sm">
+                    zc-key
+                  </code>
+                </span>
+              ) : (
+                <span key={i}>{part}</span>
+              )
+            )}
           </p>
 
           {apiKey ? (
@@ -411,7 +800,7 @@ export default function HomePage() {
               <div className="flex items-center gap-2 mb-3">
                 <span className="w-2 h-2 rounded-full bg-green-500" />
                 <span className="text-sm font-semibold text-slate-700">
-                  Your API key is ready
+                  {m.keyReadyLabel}
                 </span>
               </div>
               <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-xl px-4 py-3 mb-4">
@@ -422,12 +811,10 @@ export default function HomePage() {
                   onClick={handleCopy}
                   className="shrink-0 text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors"
                 >
-                  {copied ? "Copied!" : "Copy"}
+                  {copied ? m.copiedLabel : m.copyLabel}
                 </button>
               </div>
-              <p className="text-xs text-slate-400">
-                Save this key — it won&apos;t be shown again.
-              </p>
+              <p className="text-xs text-slate-400">{m.keyReadyWarning}</p>
             </div>
           ) : (
             /* 登録フォーム */
@@ -438,7 +825,7 @@ export default function HomePage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
+                  placeholder={m.emailPlaceholder}
                   className="flex-1 px-4 py-3 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all"
                 />
                 <button
@@ -446,15 +833,13 @@ export default function HomePage() {
                   disabled={submitting}
                   className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-semibold rounded-xl text-sm transition-colors whitespace-nowrap"
                 >
-                  {submitting ? "Generating…" : "Get free key"}
+                  {submitting ? m.submittingLabel : m.getKeyBtnLabel}
                 </button>
               </div>
               {error && (
                 <p className="text-red-500 text-sm text-center">{error}</p>
               )}
-              <p className="text-xs text-slate-400">
-                No spam. Used only to identify your key.
-              </p>
+              <p className="text-xs text-slate-400">{m.noSpam}</p>
             </form>
           )}
         </div>
@@ -468,18 +853,15 @@ export default function HomePage() {
               className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4"
               style={{ fontFamily: "var(--font-bricolage)" }}
             >
-              Use with AI agents
+              {m.agentTitle}
             </h2>
-            <p className="text-slate-500 mb-10">
-              Copy the prompt below and paste it into your AI agent.
-              It will set up zerocost automatically — no manual steps needed.
-            </p>
+            <p className="text-slate-500 mb-10">{m.agentSub}</p>
 
             <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden text-left">
               {/* ヘッダーバー */}
               <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-100 bg-slate-50">
                 <span className="text-xs font-semibold text-slate-400 font-mono">
-                  setup prompt
+                  {m.agentPromptLabel}
                 </span>
                 <button
                   onClick={handleCopyAgentPrompt}
@@ -489,18 +871,16 @@ export default function HomePage() {
                       : "bg-indigo-50 text-indigo-600 hover:bg-indigo-100"
                   }`}
                 >
-                  {agentPromptCopied ? "Copied!" : "Copy"}
+                  {agentPromptCopied ? m.copiedLabel : m.copyLabel}
                 </button>
               </div>
               {/* プロンプト本文 */}
               <pre className="text-xs text-slate-600 font-mono p-5 leading-relaxed whitespace-pre-wrap overflow-x-auto max-h-72 overflow-y-auto">
-                {AGENT_PROMPT}
+                {AGENT_PROMPT[locale]}
               </pre>
             </div>
 
-            <p className="text-xs text-slate-400 mt-4">
-              Works with any OpenAI-compatible AI agent or coding assistant.
-            </p>
+            <p className="text-xs text-slate-400 mt-4">{m.agentWorksWith}</p>
           </div>
         </div>
       </section>
@@ -512,14 +892,21 @@ export default function HomePage() {
             className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4"
             style={{ fontFamily: "var(--font-bricolage)" }}
           >
-            Check your usage
+            {m.usageTitle}
           </h2>
           <p className="text-slate-500 mb-10">
-            Enter your{" "}
-            <code className="text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded text-sm">
-              zc-key
-            </code>{" "}
-            to see how many requests you&apos;ve used this month.
+            {m.usageSub.split("zc-key").map((part, i, arr) =>
+              i < arr.length - 1 ? (
+                <span key={i}>
+                  {part}
+                  <code className="text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded text-sm">
+                    zc-key
+                  </code>
+                </span>
+              ) : (
+                <span key={i}>{part}</span>
+              )
+            )}
           </p>
 
           {usageData ? (
@@ -527,7 +914,7 @@ export default function HomePage() {
               {/* プランバッジ */}
               <div className="flex items-center justify-between mb-5">
                 <span className="text-sm font-semibold text-slate-700">
-                  Monthly usage
+                  {m.usageMonthly}
                 </span>
                 <span className="text-xs font-semibold bg-indigo-100 text-indigo-700 px-2.5 py-0.5 rounded-full uppercase tracking-wide">
                   {usageData.plan}
@@ -537,7 +924,7 @@ export default function HomePage() {
               {/* カウント表示 */}
               <div className="flex justify-between text-sm mb-2">
                 <span className="font-semibold text-slate-900">
-                  {usageData.used.toLocaleString()} requests used
+                  {m.usageReqUsed(usageData.used)}
                 </span>
                 <span className="text-slate-400">
                   / {usageData.limit?.toLocaleString() ?? "∞"}
@@ -566,16 +953,10 @@ export default function HomePage() {
               <div className="flex justify-between text-xs text-slate-400 mb-5">
                 <span>
                   {usageData.remaining !== null
-                    ? `${usageData.remaining.toLocaleString()} remaining`
-                    : "Unlimited"}
+                    ? m.usageRemaining(usageData.remaining)
+                    : m.usageUnlimited}
                 </span>
-                <span>
-                  Resets{" "}
-                  {new Date(usageData.reset_at).toLocaleDateString("en-US", {
-                    month: "long",
-                    day: "numeric",
-                  })}
-                </span>
+                <span>{m.resetDate(usageData.reset_at)}</span>
               </div>
 
               {/* 80%超えでアップグレードCTA */}
@@ -584,7 +965,7 @@ export default function HomePage() {
                   href="#pricing"
                   className="block w-full text-center py-2.5 mb-3 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl transition-colors"
                 >
-                  Upgrade your plan →
+                  {m.upgradeCtaLabel}
                 </a>
               )}
 
@@ -595,7 +976,7 @@ export default function HomePage() {
                 }}
                 className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
               >
-                Check another key
+                {m.checkAnotherKey}
               </button>
             </div>
           ) : (
@@ -613,7 +994,7 @@ export default function HomePage() {
                   disabled={usageFetching || !usageKey.trim()}
                   className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-semibold rounded-xl text-sm transition-colors whitespace-nowrap"
                 >
-                  {usageFetching ? "Checking…" : "Check"}
+                  {usageFetching ? m.checkingLabel : m.checkBtnLabel}
                 </button>
               </div>
               {usageError && (
@@ -631,14 +1012,12 @@ export default function HomePage() {
             className="text-3xl sm:text-4xl font-bold text-center text-slate-900 mb-4"
             style={{ fontFamily: "var(--font-bricolage)" }}
           >
-            Pricing
+            {m.pricingTitle}
           </h2>
-          <p className="text-center text-slate-500 mb-14">
-            Start free. Scale when you need more.
-          </p>
+          <p className="text-center text-slate-500 mb-14">{m.pricingSub}</p>
 
           <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-            {PRICING_TIERS.map((tier) => (
+            {m.pricingTiers.map((tier) => (
               <div
                 key={tier.name}
                 className={`bg-white rounded-2xl p-8 border transition-all duration-200 relative flex flex-col ${
@@ -655,7 +1034,7 @@ export default function HomePage() {
                 )}
                 {tier.highlighted && !tier.badge && (
                   <span className="absolute top-4 right-4 text-xs font-semibold bg-indigo-600 text-white px-2 py-0.5 rounded-full">
-                    Popular
+                    {m.pricingPopular}
                   </span>
                 )}
 
@@ -697,7 +1076,7 @@ export default function HomePage() {
                     disabled
                     className="w-full py-3 rounded-xl text-sm font-semibold bg-slate-100 text-slate-400 cursor-not-allowed"
                   >
-                    Coming soon
+                    {tier.cta}
                   </button>
                 ) : (
                   <a
@@ -719,10 +1098,10 @@ export default function HomePage() {
           className="text-3xl sm:text-4xl font-bold text-center text-slate-900 mb-14"
           style={{ fontFamily: "var(--font-bricolage)" }}
         >
-          FAQ
+          {m.faqTitle}
         </h2>
         <div className="max-w-2xl mx-auto space-y-6">
-          {FAQ_ITEMS.map(({ q, a }) => (
+          {m.faqItems.map(({ q, a }) => (
             <div key={q} className="border-b border-slate-100 pb-6">
               <p
                 className="font-semibold text-slate-900 mb-2"
@@ -742,16 +1121,16 @@ export default function HomePage() {
           className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4"
           style={{ fontFamily: "var(--font-bricolage)" }}
         >
-          Start routing for free
+          {m.finalCtaTitle}
         </h2>
         <p className="text-slate-500 mb-10 max-w-md mx-auto">
-          Get your API key in 10 seconds. No card, no waitlist.
+          {m.finalCtaSub}
         </p>
         <a
           href="#get-key"
           className="inline-block px-10 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-colors text-base"
         >
-          Get your free key →
+          {m.finalCtaBtn}
         </a>
       </section>
 
@@ -774,7 +1153,7 @@ export default function HomePage() {
             rel="noopener noreferrer"
             className="hover:text-slate-600 transition-colors"
           >
-            API Status
+            {m.footerApiStatus}
           </a>
         </p>
       </footer>
