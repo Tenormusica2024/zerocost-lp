@@ -24,6 +24,8 @@ export function LocaleToggle({ currentLocale }: LocaleToggleProps) {
 
   return (
     <div
+      role="group"
+      aria-label="言語 / Language"
       className={`flex items-center gap-1 px-3 py-2 text-xs font-semibold transition-opacity ${
         isPending ? "opacity-50" : ""
       }`}

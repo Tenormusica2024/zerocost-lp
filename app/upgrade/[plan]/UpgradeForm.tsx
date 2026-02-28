@@ -35,6 +35,8 @@ export function UpgradeForm({ plan, locale }: Props) {
       const data = await res.json();
 
       if (!res.ok || !data.url) {
+        // 409: 同一プラン重複購入 → locale.ts のメッセージを使う
+        if (res.status === 409) throw new Error(m.alreadySubscribed);
         throw new Error(data.error ?? m.errorFallback);
       }
 

@@ -71,12 +71,9 @@ export async function POST(req: NextRequest) {
       const existingAmount = subs.data[0].items.data[0]?.price?.unit_amount;
       const requestedAmount = PLAN_PRICE[plan].unit_amount;
       // 同一金額（同一プラン）への重複購入のみブロック
+      // エラーメッセージはクライアント側 locale.ts で管理（ALREADY_SUBSCRIBED コードで通知）
       if (existingAmount === requestedAmount) {
-        const alreadyMsg =
-          stripeLocale === "ja"
-            ? "このメールアドレスはすでに同じプランに加入済みです。ダッシュボードからプランをご確認ください。"
-            : "This email already has the same plan active. Check your plan in the dashboard.";
-        return NextResponse.json({ error: alreadyMsg }, { status: 409 });
+        return NextResponse.json({ error: "ALREADY_SUBSCRIBED" }, { status: 409 });
       }
     }
   } catch (err) {

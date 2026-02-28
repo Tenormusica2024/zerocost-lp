@@ -135,6 +135,7 @@ export const DASHBOARD_MESSAGES = {
       backToPlans: "← プラン一覧に戻る",
       errorFallback: "チェックアウトの作成に失敗しました。",
       errorOccurred: "エラーが発生しました。",
+      alreadySubscribed: "このメールアドレスはすでに同じプランに加入済みです。ダッシュボードからプランをご確認ください。",
       plans: {
         basic: {
           price: "¥500 / 月",
@@ -267,6 +268,7 @@ export const DASHBOARD_MESSAGES = {
       backToPlans: "← Back to plans",
       errorFallback: "Failed to create checkout session.",
       errorOccurred: "An error occurred.",
+      alreadySubscribed: "This email already has the same plan active. Check your plan in the dashboard.",
       plans: {
         basic: {
           price: "¥500 / month",
