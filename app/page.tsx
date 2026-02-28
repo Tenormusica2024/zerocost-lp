@@ -140,12 +140,28 @@ const FAQ_ITEMS = [
 
 // ---- コンポーネント ----
 
+const ROUTER_BASE = "https://zerocost-router.dragonrondo.workers.dev";
+
+interface UsageData {
+  plan: string;
+  used: number;
+  limit: number | null;
+  remaining: number | null;
+  reset_at: string;
+}
+
 export default function HomePage() {
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+
+  // 使用量確認
+  const [usageKey, setUsageKey] = useState("");
+  const [usageData, setUsageData] = useState<UsageData | null>(null);
+  const [usageFetching, setUsageFetching] = useState(false);
+  const [usageError, setUsageError] = useState<string | null>(null);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -173,6 +189,25 @@ export default function HomePage() {
     await navigator.clipboard.writeText(apiKey);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleCheckUsage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!usageKey.trim()) return;
+    setUsageFetching(true);
+    setUsageError(null);
+    try {
+      const res = await fetch(`${ROUTER_BASE}/v1/keys/usage`, {
+        headers: { Authorization: `Bearer ${usageKey.trim()}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Something went wrong.");
+      setUsageData(data as UsageData);
+    } catch (err) {
+      setUsageError(err instanceof Error ? err.message : "Something went wrong.");
+    } finally {
+      setUsageFetching(false);
+    }
   };
 
   return (
@@ -369,6 +404,125 @@ export default function HomePage() {
               <p className="text-xs text-slate-400">
                 No spam. Used only to identify your key.
               </p>
+            </form>
+          )}
+        </div>
+      </section>
+
+      {/* 使用量確認セクション */}
+      <section id="usage" className="py-24 max-w-6xl mx-auto px-6">
+        <div className="max-w-lg mx-auto text-center">
+          <h2
+            className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4"
+            style={{ fontFamily: "var(--font-bricolage)" }}
+          >
+            Check your usage
+          </h2>
+          <p className="text-slate-500 mb-10">
+            Enter your{" "}
+            <code className="text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded text-sm">
+              zc-key
+            </code>{" "}
+            to see how many requests you&apos;ve used this month.
+          </p>
+
+          {usageData ? (
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-8 text-left">
+              {/* プランバッジ */}
+              <div className="flex items-center justify-between mb-5">
+                <span className="text-sm font-semibold text-slate-700">
+                  Monthly usage
+                </span>
+                <span className="text-xs font-semibold bg-indigo-100 text-indigo-700 px-2.5 py-0.5 rounded-full uppercase tracking-wide">
+                  {usageData.plan}
+                </span>
+              </div>
+
+              {/* カウント表示 */}
+              <div className="flex justify-between text-sm mb-2">
+                <span className="font-semibold text-slate-900">
+                  {usageData.used.toLocaleString()} requests used
+                </span>
+                <span className="text-slate-400">
+                  / {usageData.limit?.toLocaleString() ?? "∞"}
+                </span>
+              </div>
+
+              {/* プログレスバー */}
+              <div className="w-full bg-slate-200 rounded-full h-2.5 mb-3 overflow-hidden">
+                <div
+                  className={`h-2.5 rounded-full transition-all duration-700 ${
+                    usageData.limit && usageData.used / usageData.limit > 0.8
+                      ? "bg-red-500"
+                      : usageData.limit && usageData.used / usageData.limit > 0.5
+                      ? "bg-amber-400"
+                      : "bg-indigo-500"
+                  }`}
+                  style={{
+                    width: usageData.limit
+                      ? `${Math.min(100, (usageData.used / usageData.limit) * 100)}%`
+                      : "0%",
+                  }}
+                />
+              </div>
+
+              {/* 残量 & リセット日 */}
+              <div className="flex justify-between text-xs text-slate-400 mb-5">
+                <span>
+                  {usageData.remaining !== null
+                    ? `${usageData.remaining.toLocaleString()} remaining`
+                    : "Unlimited"}
+                </span>
+                <span>
+                  Resets{" "}
+                  {new Date(usageData.reset_at).toLocaleDateString("en-US", {
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </span>
+              </div>
+
+              {/* 80%超えでアップグレードCTA */}
+              {usageData.limit && usageData.used / usageData.limit > 0.8 && (
+                <a
+                  href="#pricing"
+                  className="block w-full text-center py-2.5 mb-3 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl transition-colors"
+                >
+                  Upgrade your plan →
+                </a>
+              )}
+
+              <button
+                onClick={() => {
+                  setUsageData(null);
+                  setUsageKey("");
+                }}
+                className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                Check another key
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handleCheckUsage} className="flex flex-col gap-3">
+              <div className="flex gap-3">
+                <input
+                  type="text"
+                  value={usageKey}
+                  onChange={(e) => setUsageKey(e.target.value)}
+                  placeholder="zc-xxxxxxxxxxxxxxxxxxxxxxxx"
+                  className="flex-1 px-4 py-3 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all font-mono"
+                />
+                <button
+                  type="submit"
+                  disabled={usageFetching || !usageKey.trim()}
+                  className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-semibold rounded-xl text-sm transition-colors whitespace-nowrap"
+                >
+                  {usageFetching ? "Checking…" : "Check"}
+                </button>
+              </div>
+              {usageError && (
+                <p className="text-red-500 text-sm text-center">{usageError}</p>
+              )}
             </form>
           )}
         </div>
