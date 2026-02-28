@@ -339,10 +339,10 @@ const MESSAGES: Record<Locale, Messages> = {
           "OpenAI-compatible API",
           "Priority routing",
         ],
-        cta: "Coming soon",
-        ctaStyle: "disabled",
-        badge: "Coming soon",
-        comingSoon: true,
+        cta: "Get Basic",
+        ctaStyle: "secondary",
+        badge: null,
+        comingSoon: false,
       },
       {
         name: "Pro",
@@ -357,10 +357,10 @@ const MESSAGES: Record<Locale, Messages> = {
           "SLA-backed uptime",
           "Usage analytics",
         ],
-        cta: "Coming soon",
-        ctaStyle: "disabled",
-        badge: "Coming soon",
-        comingSoon: true,
+        cta: "Get Pro",
+        ctaStyle: "primary",
+        badge: null,
+        comingSoon: false,
         highlighted: true,
       },
     ],
@@ -380,7 +380,7 @@ const MESSAGES: Record<Locale, Messages> = {
       },
       {
         q: "Do I need a credit card?",
-        a: "No. The Free tier is completely free, no card required. Basic and Pro plans are in development — you'll be notified when they launch.",
+        a: "No. The Free tier is completely free, no card required. Basic and Pro plans are billed securely via Stripe.",
       },
     ],
     finalCtaTitle: "Start routing for free",
@@ -530,10 +530,10 @@ const MESSAGES: Record<Locale, Messages> = {
           "OpenAI互換API",
           "優先ルーティング",
         ],
-        cta: "近日公開",
-        ctaStyle: "disabled",
-        badge: "近日公開",
-        comingSoon: true,
+        cta: "Basic を始める",
+        ctaStyle: "secondary",
+        badge: null,
+        comingSoon: false,
       },
       {
         name: "Pro",
@@ -548,10 +548,10 @@ const MESSAGES: Record<Locale, Messages> = {
           "SLA保証アップタイム",
           "使用量アナリティクス",
         ],
-        cta: "近日公開",
-        ctaStyle: "disabled",
-        badge: "近日公開",
-        comingSoon: true,
+        cta: "Pro を始める",
+        ctaStyle: "primary",
+        badge: null,
+        comingSoon: false,
         highlighted: true,
       },
     ],
@@ -571,7 +571,7 @@ const MESSAGES: Record<Locale, Messages> = {
       },
       {
         q: "クレジットカードは必要？",
-        a: "不要です。Freeプランは完全無料でカード不要です。BasicとProプランは開発中 — リリース時に通知します。",
+        a: "不要です。Freeプランは完全無料でカード不要です。BasicとProプランのお支払いはStripeが安全に管理します。",
       },
     ],
     finalCtaTitle: "無料でルーティングを始める",
@@ -1432,7 +1432,7 @@ export default function HomePage() {
                   </button>
                 ) : (
                   <a
-                    href="/login"
+                    href={`/upgrade/${tier.name.toLowerCase()}`}
                     className="block w-full text-center py-3 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white transition-colors"
                   >
                     {tier.cta}
