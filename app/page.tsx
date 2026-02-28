@@ -663,7 +663,7 @@ export default function HomePage() {
               </button>
             </div>
             <a
-              href="https://github.com/Tenormusica2024/zerocost-router"
+              href="https://github.com/Tenormusica2024"
               target="_blank"
               rel="noopener noreferrer"
               className="text-slate-500 hover:text-slate-900 text-sm font-medium transition-colors"
@@ -1139,7 +1139,7 @@ export default function HomePage() {
         <p>
           zerocost ·{" "}
           <a
-            href="https://github.com/Tenormusica2024/zerocost-router"
+            href="https://github.com/Tenormusica2024"
             target="_blank"
             rel="noopener noreferrer"
             className="hover:text-slate-600 transition-colors"
