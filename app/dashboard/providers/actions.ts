@@ -24,14 +24,15 @@ async function getZcKey(): Promise<string | null> {
 }
 
 // プロバイダーキーを登録する
-export async function addProvider(formData: FormData) {
+// Next.js 16 App Router: form action は void を返す必要があるため戻り値なし
+export async function addProvider(formData: FormData): Promise<void> {
   const provider = formData.get("provider") as string;
   const apiKey = formData.get("api_key") as string;
 
-  if (!provider || !apiKey) return { error: "Invalid input" };
+  if (!provider || !apiKey) return;
 
   const zcKey = await getZcKey();
-  if (!zcKey) return { error: "Unauthorized" };
+  if (!zcKey) return;
 
   const res = await fetch(`${ROUTER_BASE}/v1/keys/providers`, {
     method: "POST",
@@ -42,30 +43,23 @@ export async function addProvider(formData: FormData) {
     body: JSON.stringify({ provider, api_key: apiKey }),
   });
 
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    return { error: body.error ?? "Failed to add provider" };
-  }
+  if (!res.ok) return;
 
   revalidatePath("/dashboard/providers");
-  return { success: true };
 }
 
 // プロバイダーキーを削除する
-export async function deleteProvider(provider: string) {
+// Next.js 16 App Router: form action は void を返す必要があるため戻り値なし
+export async function deleteProvider(provider: string): Promise<void> {
   const zcKey = await getZcKey();
-  if (!zcKey) return { error: "Unauthorized" };
+  if (!zcKey) return;
 
   const res = await fetch(`${ROUTER_BASE}/v1/keys/providers/${provider}`, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${zcKey}` },
   });
 
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    return { error: body.error ?? "Failed to delete provider" };
-  }
+  if (!res.ok) return;
 
   revalidatePath("/dashboard/providers");
-  return { success: true };
 }
