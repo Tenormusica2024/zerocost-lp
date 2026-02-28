@@ -202,6 +202,10 @@ export default function HomePage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Something went wrong.");
+      // APIレスポンスの最低限の形状チェック（型キャスト前の実行時検証）
+      if (typeof data.plan !== "string" || typeof data.used !== "number") {
+        throw new Error("Unexpected response from server.");
+      }
       setUsageData(data as UsageData);
     } catch (err) {
       setUsageError(err instanceof Error ? err.message : "Something went wrong.");
@@ -448,23 +452,23 @@ export default function HomePage() {
                 </span>
               </div>
 
-              {/* プログレスバー */}
-              <div className="w-full bg-slate-200 rounded-full h-2.5 mb-3 overflow-hidden">
-                <div
-                  className={`h-2.5 rounded-full transition-all duration-700 ${
-                    usageData.limit && usageData.used / usageData.limit > 0.8
-                      ? "bg-red-500"
-                      : usageData.limit && usageData.used / usageData.limit > 0.5
-                      ? "bg-amber-400"
-                      : "bg-indigo-500"
-                  }`}
-                  style={{
-                    width: usageData.limit
-                      ? `${Math.min(100, (usageData.used / usageData.limit) * 100)}%`
-                      : "0%",
-                  }}
-                />
-              </div>
+              {/* プログレスバー（proプランは limit=null のため非表示） */}
+              {usageData.limit !== null && (
+                <div className="w-full bg-slate-200 rounded-full h-2.5 mb-3 overflow-hidden">
+                  <div
+                    className={`h-2.5 rounded-full transition-all duration-700 ${
+                      usageData.used / usageData.limit > 0.8
+                        ? "bg-red-500"
+                        : usageData.used / usageData.limit > 0.5
+                        ? "bg-amber-400"
+                        : "bg-indigo-500"
+                    }`}
+                    style={{
+                      width: `${Math.min(100, (usageData.used / usageData.limit) * 100)}%`,
+                    }}
+                  />
+                </div>
+              )}
 
               {/* 残量 & リセット日 */}
               <div className="flex justify-between text-xs text-slate-400 mb-5">
@@ -506,7 +510,7 @@ export default function HomePage() {
             <form onSubmit={handleCheckUsage} className="flex flex-col gap-3">
               <div className="flex gap-3">
                 <input
-                  type="text"
+                  type="password"
                   value={usageKey}
                   onChange={(e) => setUsageKey(e.target.value)}
                   placeholder="zc-xxxxxxxxxxxxxxxxxxxxxxxx"
