@@ -313,7 +313,7 @@ export default function HomePage() {
         >
           Route LLMs for free.
           <br />
-          <span className="text-indigo-600">Zero cost, zero limits.</span>
+          <span className="text-indigo-600">Zero cost, zero friction.</span>
         </h1>
         <p className="text-center text-xl text-slate-500 max-w-2xl mx-auto mb-12 leading-relaxed">
           One API key. Auto-failover across the fastest free-tier LLM providers.
