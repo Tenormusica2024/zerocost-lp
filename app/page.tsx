@@ -71,7 +71,7 @@ const PRICING_TIERS = [
     period: "forever",
     description: "For personal projects and exploration.",
     features: [
-      "500 requests / month",
+      "1,000 requests / month",
       "3 providers (Groq, Cerebras, HF)",
       "Auto-failover",
       "OpenAI-compatible API",
