@@ -195,7 +195,7 @@ const MESSAGES: Record<Locale, Messages> = {
     heroTitle2: "Zero cost, zero friction.",
     heroSub:
       "One API key. Auto-failover across the fastest free-tier LLM providers. Drop-in OpenAI replacement — change one line of code.",
-    featuresTitle: "Built for developers who don't want to pay for inference",
+    featuresTitle: "Built for developers who don't want to pay for LLM APIs",
     featuresSub:
       "Free tiers from Groq, Cerebras, and HuggingFace add up to serious throughput — if you can route around the rate limits.",
     features: [
@@ -366,7 +366,7 @@ const MESSAGES: Record<Locale, Messages> = {
     heroTitle2: "コストゼロ、移行ゼロ",
     heroSub:
       "APIキー1本で、最速の無料LLMプロバイダーに自動フェイルオーバー。OpenAIの完全互換 — コード1行変えるだけ。",
-    featuresTitle: "推論コストを払いたくない開発者のために",
+    featuresTitle: "LLM APIにお金をかけたくない開発者のために",
     featuresSub:
       "Groq・Cerebras・HuggingFaceの無料枠を組み合わせれば、レートリミットを回避しながら本格的なスループットが得られます。",
     features: [
