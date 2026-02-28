@@ -21,12 +21,21 @@ export async function POST(req: NextRequest) {
   const supabaseAdmin = getSupabaseAdmin();
 
   // 既存の有効なキーがあればそのまま返す（冪等）
-  const { data: existing } = await supabaseAdmin
+  // PGRST116 = 0件ヒット（正常）。それ以外はDB障害として503
+  const { data: existing, error: selectError } = await supabaseAdmin
     .from("zerocost_keys")
     .select("zc_key")
     .eq("email", email)
     .eq("status", "active")
     .single();
+
+  if (selectError && selectError.code !== "PGRST116") {
+    console.error("Supabase select error:", selectError);
+    return NextResponse.json(
+      { error: "Service temporarily unavailable." },
+      { status: 503 }
+    );
+  }
 
   if (existing?.zc_key) {
     return NextResponse.json({ key: existing.zc_key });
