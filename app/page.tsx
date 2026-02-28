@@ -13,6 +13,10 @@ const ROUTER_BASE =
   process.env.NEXT_PUBLIC_ROUTER_BASE ??
   "https://zerocost-router.dragonrondo.workers.dev";
 
+const TRACKER_BASE =
+  process.env.NEXT_PUBLIC_TRACKER_BASE ??
+  "https://zerocost-llm-tracker.dragonrondo.workers.dev";
+
 // クイックスタートのコードスニペット（ロケール非依存）
 const QUICKSTART_CODES = [
   "zc-xxxxxxxxxxxxxxxxxxxxxxxx",
@@ -183,6 +187,15 @@ interface Messages {
   finalCtaBtn: string;
   footerApiStatus: string;
   errorFallback: string;
+  providersTitle: string;
+  providersSub: string;
+  providersLive: string;
+  providersRpm: string;
+  providersRpd: string;
+  providersModels: (n: number) => string;
+  providersLoading: string;
+  providersError: string;
+  providersBestLabel: string;
 }
 
 // ---- 翻訳テキスト ----
@@ -357,6 +370,16 @@ const MESSAGES: Record<Locale, Messages> = {
     finalCtaBtn: "Get your free key →",
     footerApiStatus: "API Status",
     errorFallback: "Something went wrong.",
+    providersTitle: "Live provider status",
+    providersSub:
+      "Real-time quota data collected every hour from each provider's API.",
+    providersLive: "live",
+    providersRpm: "RPM",
+    providersRpd: "RPD",
+    providersModels: (n) => `${n} models`,
+    providersLoading: "Fetching live data…",
+    providersError: "Could not load provider status.",
+    providersBestLabel: "Best right now",
   },
 
   ja: {
@@ -529,10 +552,46 @@ const MESSAGES: Record<Locale, Messages> = {
     finalCtaBtn: "無料キーを取得 →",
     footerApiStatus: "API ステータス",
     errorFallback: "エラーが発生しました。",
+    providersTitle: "ライブプロバイダーステータス",
+    providersSub:
+      "各プロバイダーAPIから毎時収集するリアルタイムのクォータデータです。",
+    providersLive: "ライブ",
+    providersRpm: "RPM",
+    providersRpd: "RPD",
+    providersModels: (n) => `${n} モデル`,
+    providersLoading: "ライブデータを取得中…",
+    providersError: "プロバイダーステータスを読み込めませんでした。",
+    providersBestLabel: "現在のベスト",
   },
 };
 
 // ---- APIレスポンス型 ----
+
+interface TrackerProviderModel {
+  modelId: string;
+  modelName: string | null;
+  requestsPerMinute: number | null;
+  requestsPerDay: number | null;
+  tokensPerMinute: number | null;
+  tokensPerDay: number | null;
+  contextWindow: number | null;
+}
+
+interface TrackerProvider {
+  slug: string;
+  name: string;
+  models: TrackerProviderModel[];
+  lastUpdated: string | null;
+}
+
+interface TrackerBest {
+  provider: string;
+  modelId: string;
+  modelName: string | null;
+  requestsPerMinute: number | null;
+  requestsPerDay: number | null;
+  lastUpdated: string;
+}
 
 interface UsageData {
   plan: string;
@@ -574,6 +633,50 @@ export default function HomePage() {
   const [usageData, setUsageData] = useState<UsageData | null>(null);
   const [usageFetching, setUsageFetching] = useState(false);
   const [usageError, setUsageError] = useState<string | null>(null);
+
+  // tracker API から各プロバイダーのリアルタイムクォータデータを取得
+  const [trackerProviders, setTrackerProviders] = useState<TrackerProvider[]>([]);
+  const [trackerBest, setTrackerBest] = useState<TrackerBest | null>(null);
+  const [trackerLoading, setTrackerLoading] = useState(true);
+  const [trackerError, setTrackerError] = useState(false);
+
+  useEffect(() => {
+    const fetchTrackerData = async () => {
+      try {
+        const [listRes, bestRes] = await Promise.all([
+          fetch(`${TRACKER_BASE}/v1/providers`),
+          fetch(`${TRACKER_BASE}/v1/quota/best`),
+        ]);
+        if (!listRes.ok || !bestRes.ok) throw new Error("fetch failed");
+
+        const listData: { providers: { slug: string; name: string }[] } =
+          await listRes.json();
+        const bestData: TrackerBest = await bestRes.json();
+
+        // 各プロバイダーの詳細を並列取得
+        const detailResults = await Promise.allSettled(
+          listData.providers.map((p) =>
+            fetch(`${TRACKER_BASE}/v1/providers/${p.slug}`).then((r) =>
+              r.json()
+            )
+          )
+        );
+
+        const providers: TrackerProvider[] = detailResults
+          .map((r) => (r.status === "fulfilled" ? (r.value as TrackerProvider) : null))
+          .filter((p): p is TrackerProvider => p !== null);
+
+        setTrackerProviders(providers);
+        setTrackerBest(bestData);
+      } catch {
+        setTrackerError(true);
+      } finally {
+        setTrackerLoading(false);
+      }
+    };
+
+    fetchTrackerData();
+  }, []);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -795,6 +898,121 @@ export default function HomePage() {
             ))}
           </div>
         </div>
+      </section>
+
+      {/* ライブプロバイダーステータスセクション */}
+      <section className="py-20 max-w-6xl mx-auto px-6">
+        <div className="text-center mb-10">
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <h2
+              className="text-3xl sm:text-4xl font-bold text-slate-900"
+              style={{ fontFamily: "var(--font-bricolage)" }}
+            >
+              {m.providersTitle}
+            </h2>
+            <span className="inline-flex items-center gap-1 bg-green-50 border border-green-200 text-green-700 text-xs font-semibold px-2.5 py-1 rounded-full">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+              {m.providersLive}
+            </span>
+          </div>
+          <p className="text-slate-500 max-w-xl mx-auto">{m.providersSub}</p>
+        </div>
+
+        {trackerLoading ? (
+          <p className="text-center text-slate-400 text-sm">{m.providersLoading}</p>
+        ) : trackerError ? (
+          <p className="text-center text-slate-400 text-sm">{m.providersError}</p>
+        ) : (
+          <div className="space-y-4">
+            {/* ベストモデルハイライト */}
+            {trackerBest && (
+              <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-5 flex flex-wrap items-center gap-4">
+                <span className="text-xs font-semibold bg-indigo-600 text-white px-2.5 py-1 rounded-full shrink-0">
+                  {m.providersBestLabel}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <span className="font-semibold text-slate-900 text-sm">
+                    {trackerBest.modelName ?? trackerBest.modelId}
+                  </span>
+                  <span className="text-slate-400 text-sm ml-2">
+                    via {trackerBest.provider}
+                  </span>
+                </div>
+                <div className="flex items-center gap-4 text-xs text-slate-600 font-mono">
+                  {trackerBest.requestsPerMinute !== null && (
+                    <span>
+                      {trackerBest.requestsPerMinute.toLocaleString()} {m.providersRpm}
+                    </span>
+                  )}
+                  {trackerBest.requestsPerDay !== null && (
+                    <span>
+                      {trackerBest.requestsPerDay.toLocaleString()} {m.providersRpd}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* 各プロバイダーカード */}
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {trackerProviders.map((provider) => {
+                const isBest = trackerBest?.provider === provider.slug;
+                // RPM 降順でベストモデルを選択
+                const bestModel = [...provider.models].sort(
+                  (a, b) => (b.requestsPerMinute ?? 0) - (a.requestsPerMinute ?? 0)
+                )[0];
+                return (
+                  <div
+                    key={provider.slug}
+                    className={`bg-white rounded-2xl p-5 border transition-all duration-200 ${
+                      isBest
+                        ? "border-indigo-200 shadow-sm shadow-indigo-50"
+                        : "border-slate-100 hover:border-slate-200"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <span
+                        className="font-semibold text-slate-900 text-sm"
+                        style={{ fontFamily: "var(--font-bricolage)" }}
+                      >
+                        {provider.name}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-slate-400">
+                          {m.providersModels(provider.models.length)}
+                        </span>
+                        {provider.lastUpdated && (
+                          <span className="w-2 h-2 rounded-full bg-green-400" title="online" />
+                        )}
+                      </div>
+                    </div>
+                    {bestModel && (
+                      <div className="space-y-1.5">
+                        <p className="text-xs text-slate-500 font-mono truncate">
+                          {bestModel.modelName ?? bestModel.modelId}
+                        </p>
+                        <div className="flex items-center gap-3 text-xs font-mono">
+                          {bestModel.requestsPerMinute !== null ? (
+                            <span className="text-indigo-600 font-semibold">
+                              {bestModel.requestsPerMinute.toLocaleString()} {m.providersRpm}
+                            </span>
+                          ) : (
+                            <span className="text-slate-400">— {m.providersRpm}</span>
+                          )}
+                          {bestModel.requestsPerDay !== null && (
+                            <span className="text-slate-400">
+                              {bestModel.requestsPerDay.toLocaleString()} {m.providersRpd}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </section>
 
       {/* メール登録セクション */}
