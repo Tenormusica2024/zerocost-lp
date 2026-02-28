@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
 
   const supabaseAdmin = getSupabaseAdmin();
 
-  // 既存の有効なキーがあればそのまま返す
+  // 既存の有効なキーがあればそのまま返す（冪等）
   const { data: existing } = await supabaseAdmin
     .from("zerocost_keys")
     .select("zc_key")
@@ -32,16 +32,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ key: existing.zc_key });
   }
 
-  // zerocost-router の /v1/keys エンドポイントに新規キーを発行依頼
+  // zerocost-router の POST /v1/keys でキーを新規発行（認証不要）
   let zcKey: string;
   try {
     const routerRes = await fetch(`${ROUTER_URL}/v1/keys`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Admin-Secret": process.env.ROUTER_ADMIN_SECRET ?? "",
-      },
-      body: JSON.stringify({ email }),
     });
 
     if (!routerRes.ok) {
@@ -54,7 +49,7 @@ export async function POST(req: NextRequest) {
     }
 
     const routerData = await routerRes.json();
-    zcKey = routerData.key ?? routerData.zc_key;
+    zcKey = routerData.key;
 
     if (!zcKey) {
       console.error("Router returned no key:", routerData);
@@ -71,7 +66,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Supabase に email + key を保存
+  // Supabase に email + key を保存（失敗してもキーは返す）
   const { error: dbError } = await supabaseAdmin.from("zerocost_keys").insert({
     email,
     zc_key: zcKey,
@@ -81,7 +76,6 @@ export async function POST(req: NextRequest) {
 
   if (dbError) {
     console.error("Supabase insert error:", dbError);
-    // DB保存失敗でもキー自体は有効なので返す（冪等）
   }
 
   return NextResponse.json({ key: zcKey });
