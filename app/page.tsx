@@ -698,7 +698,7 @@ export default function HomePage() {
               </a>
             )}
             <a
-              href="#get-key"
+              href="/login"
               className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition-colors"
             >
               {m.navCta}
@@ -1107,7 +1107,7 @@ export default function HomePage() {
                   </button>
                 ) : (
                   <a
-                    href="#get-key"
+                    href="/login"
                     className="block w-full text-center py-3 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white transition-colors"
                   >
                     {tier.cta}
@@ -1154,7 +1154,7 @@ export default function HomePage() {
           {m.finalCtaSub}
         </p>
         <a
-          href="#get-key"
+          href="/login"
           className="inline-block px-10 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-colors text-base"
         >
           {m.finalCtaBtn}
