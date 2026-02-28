@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { Bricolage_Grotesque, DM_Sans } from "next/font/google";
+import { Plus_Jakarta_Sans, DM_Sans } from "next/font/google";
 import "./globals.css";
 
-const bricolage = Bricolage_Grotesque({
+const bricolage = Plus_Jakarta_Sans({
   variable: "--font-bricolage",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800"],
