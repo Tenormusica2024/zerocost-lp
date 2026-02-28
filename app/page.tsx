@@ -211,13 +211,13 @@ const MESSAGES: Record<Locale, Messages> = {
       "One API key. Auto-failover across the fastest free-tier LLM providers. Drop-in OpenAI replacement — change one line of code.",
     featuresTitle: "Built for developers who don't want to pay for LLM APIs",
     featuresSub:
-      "Free tiers from Groq, Cerebras, and HuggingFace add up to serious throughput — if you can route around the rate limits.",
+      "Multiple free LLM providers. One endpoint. Automatic failover between them — so rate limits become someone else's problem.",
     features: [
       {
         icon: "⇄",
         title: "Auto-Failover",
         description:
-          "When Groq hits a rate limit, zerocost silently switches to Cerebras or HuggingFace. Your requests keep flowing — no retries, no error handling needed.",
+          "When one provider hits a rate limit, zerocost silently switches to the next. Your requests keep flowing — no retries, no error handling needed.",
       },
       {
         icon: "◎",
@@ -392,13 +392,13 @@ const MESSAGES: Record<Locale, Messages> = {
       "APIキー1本で、最速の無料LLMプロバイダーに自動フェイルオーバー。OpenAIの完全互換 — コード1行変えるだけ。",
     featuresTitle: "LLM APIにお金をかけたくない開発者のために",
     featuresSub:
-      "Groq・Cerebras・HuggingFaceの無料枠を組み合わせれば、レートリミットを回避しながら本格的なスループットが得られます。",
+      "複数の無料 LLM プロバイダーを1本のエンドポイントで束ねて、レートリミットを自動回避。プロバイダー管理は zerocost に任せられます。",
     features: [
       {
         icon: "⇄",
         title: "自動フェイルオーバー",
         description:
-          "Groqがレートリミットに達すると、zerocostはCerebrasまたはHuggingFaceにサイレントで切り替えます。リトライもエラーハンドリングも不要。",
+          "プロバイダーがレートリミットに達すると、zerocost は次のプロバイダーに自動で切り替えます。リトライもエラーハンドリングも不要。",
       },
       {
         icon: "◎",
