@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createClient } from "@/app/lib/supabase/client";
 
 // ---- ロケール型 ----
 
@@ -551,6 +552,16 @@ export default function HomePage() {
     if (navigator.language.startsWith("ja")) setLocale("ja");
   }, []);
 
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+
+  // ログイン状態を確認（Navbar の Sign in / Dashboard 表示切り替え用）
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsLoggedIn(!!session);
+    });
+  }, []);
+
   const m = MESSAGES[locale];
 
   const [email, setEmail] = useState("");
@@ -670,6 +681,22 @@ export default function HomePage() {
             >
               GitHub
             </a>
+            {/* ログイン状態に応じて Sign in / Dashboard を表示 */}
+            {isLoggedIn === null ? null : isLoggedIn ? (
+              <a
+                href="/dashboard"
+                className="text-slate-600 hover:text-slate-900 text-sm font-medium transition-colors"
+              >
+                Dashboard
+              </a>
+            ) : (
+              <a
+                href="/login"
+                className="text-slate-600 hover:text-slate-900 text-sm font-medium transition-colors"
+              >
+                Sign in
+              </a>
+            )}
             <a
               href="#get-key"
               className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition-colors"
