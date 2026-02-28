@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
       const existingSub = subs.data[0];
       // プランキー比較（metadata.plan が存在する場合）→ 価格変更に耐性あり
       // metadata なし（このfixより前に作成された旧サブスク）は金額でフォールバック
-      const existingPlanKey = existingSub.metadata?.plan;
+      const existingPlanKey: string | undefined = existingSub.metadata?.plan;
       const isDuplicate = existingPlanKey
         ? existingPlanKey === plan
         : existingSub.items.data[0]?.price?.unit_amount === PLAN_PRICE[plan].unit_amount;
