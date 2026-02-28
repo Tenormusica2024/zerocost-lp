@@ -42,9 +42,10 @@ const QUICKSTART_STEPS = [
     step: "02",
     title: "Register your providers",
     description: "Send your Groq, Cerebras, or HuggingFace keys once.",
-    code: `curl -X POST https://zerocost-router.dragonrondo.workers.dev/v1/keys \\
+    code: `curl -X POST https://zerocost-router.dragonrondo.workers.dev/v1/keys/providers \\
   -H "Authorization: Bearer zc-your-key" \\
-  -d '{"provider":"groq","key":"gsk_..."}'`,
+  -H "Content-Type: application/json" \\
+  -d '{"provider_id":"groq","api_key":"gsk_..."}'`,
   },
   {
     step: "03",
