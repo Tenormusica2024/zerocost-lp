@@ -68,12 +68,16 @@ export async function POST(req: NextRequest) {
       expand: ["data.items.data.price"],
     });
     if (subs.data.length > 0) {
-      const existingAmount = subs.data[0].items.data[0]?.price?.unit_amount;
-      const requestedAmount = PLAN_PRICE[plan].unit_amount;
-      // 同一金額（同一プラン）への重複購入のみブロック
-      // エラーメッセージはクライアント側 locale.ts で管理（ALREADY_SUBSCRIBED コードで通知）
-      if (existingAmount === requestedAmount) {
-        return NextResponse.json({ error: "ALREADY_SUBSCRIBED" }, { status: 409 });
+      const existingSub = subs.data[0];
+      // プランキー比較（metadata.plan が存在する場合）→ 価格変更に耐性あり
+      // metadata なし（このfixより前に作成された旧サブスク）は金額でフォールバック
+      const existingPlanKey = existingSub.metadata?.plan;
+      const isDuplicate = existingPlanKey
+        ? existingPlanKey === plan
+        : existingSub.items.data[0]?.price?.unit_amount === PLAN_PRICE[plan].unit_amount;
+      // エラーメッセージはクライアント側 locale.ts で管理（409 ステータスで通知）
+      if (isDuplicate) {
+        return NextResponse.json({}, { status: 409 });
       }
     }
   } catch (err) {
@@ -105,6 +109,8 @@ export async function POST(req: NextRequest) {
       success_url: `${APP_URL}/upgrade/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url:  `${APP_URL}/#pricing`,
       metadata: { email, plan },
+      // Subscription 自体にもプランキーを保存（重複チェックで metadata.plan を参照するため）
+      subscription_data: { metadata: { plan } },
     });
 
     return NextResponse.json({ url: session.url });
