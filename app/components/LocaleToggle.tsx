@@ -30,6 +30,7 @@ export function LocaleToggle({ currentLocale }: LocaleToggleProps) {
     >
       <button
         onClick={() => handleToggle("ja")}
+        aria-pressed={currentLocale === "ja"}
         className={`px-1 transition-colors ${
           currentLocale === "ja"
             ? "text-slate-700"
@@ -41,6 +42,7 @@ export function LocaleToggle({ currentLocale }: LocaleToggleProps) {
       <span className="text-slate-200">|</span>
       <button
         onClick={() => handleToggle("en")}
+        aria-pressed={currentLocale === "en"}
         className={`px-1 transition-colors ${
           currentLocale === "en"
             ? "text-slate-700"

@@ -133,6 +133,8 @@ export const DASHBOARD_MESSAGES = {
       submitting: "移動中…",
       cancelNote: "30日以内はいつでもキャンセル可能。クレジットカードは Stripe が安全に管理します。",
       backToPlans: "← プラン一覧に戻る",
+      errorFallback: "チェックアウトの作成に失敗しました。",
+      errorOccurred: "エラーが発生しました。",
       plans: {
         basic: {
           price: "¥500 / 月",
@@ -263,6 +265,8 @@ export const DASHBOARD_MESSAGES = {
       submitting: "Redirecting…",
       cancelNote: "Cancel anytime within 30 days. Your card is securely managed by Stripe.",
       backToPlans: "← Back to plans",
+      errorFallback: "Failed to create checkout session.",
+      errorOccurred: "An error occurred.",
       plans: {
         basic: {
           price: "¥500 / month",

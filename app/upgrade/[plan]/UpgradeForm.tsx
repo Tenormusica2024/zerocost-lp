@@ -35,12 +35,12 @@ export function UpgradeForm({ plan, locale }: Props) {
       const data = await res.json();
 
       if (!res.ok || !data.url) {
-        throw new Error(data.error ?? (locale === "ja" ? "チェックアウトの作成に失敗しました。" : "Failed to create checkout session."));
+        throw new Error(data.error ?? m.errorFallback);
       }
 
       window.location.href = data.url;
     } catch (err) {
-      setError(err instanceof Error ? err.message : (locale === "ja" ? "エラーが発生しました。" : "An error occurred."));
+      setError(err instanceof Error ? err.message : m.errorOccurred);
       setSubmitting(false);
     }
   };

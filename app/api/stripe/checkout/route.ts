@@ -58,19 +58,26 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // 既存アクティブサブスクリプションの確認（二重課金防止）
+  // 既存アクティブサブスクリプションの確認（同一プランへの二重課金防止）
+  // 別プランへのアップグレード（例: Basic → Pro）は通過させる
   try {
     const subs = await stripe.subscriptions.list({
       customer: customerId,
       status: "active",
       limit: 1,
+      expand: ["data.items.data.price"],
     });
     if (subs.data.length > 0) {
-      const alreadyMsg =
-        stripeLocale === "ja"
-          ? "このメールアドレスはすでに有効なサブスクリプションがあります。ダッシュボードからプランをご確認ください。"
-          : "This email already has an active subscription. Check your plan in the dashboard.";
-      return NextResponse.json({ error: alreadyMsg }, { status: 409 });
+      const existingAmount = subs.data[0].items.data[0]?.price?.unit_amount;
+      const requestedAmount = PLAN_PRICE[plan].unit_amount;
+      // 同一金額（同一プラン）への重複購入のみブロック
+      if (existingAmount === requestedAmount) {
+        const alreadyMsg =
+          stripeLocale === "ja"
+            ? "このメールアドレスはすでに同じプランに加入済みです。ダッシュボードからプランをご確認ください。"
+            : "This email already has the same plan active. Check your plan in the dashboard.";
+        return NextResponse.json({ error: alreadyMsg }, { status: 409 });
+      }
     }
   } catch (err) {
     console.error("Stripe subscriptions list error:", err);
