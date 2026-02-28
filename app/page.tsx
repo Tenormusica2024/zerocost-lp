@@ -141,7 +141,9 @@ const FAQ_ITEMS = [
 
 // ---- コンポーネント ----
 
-const ROUTER_BASE = "https://zerocost-router.dragonrondo.workers.dev";
+const ROUTER_BASE =
+  process.env.NEXT_PUBLIC_ROUTER_BASE ??
+  "https://zerocost-router.dragonrondo.workers.dev";
 
 interface UsageData {
   plan: string;
