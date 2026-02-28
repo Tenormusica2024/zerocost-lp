@@ -176,6 +176,13 @@ interface Messages {
   checkingLabel: string;
   checkBtnLabel: string;
   upgradeCtaLabel: string;
+  throughputTitle: string;
+  throughputSub: string;
+  throughputSingleLabel: string;
+  throughputSingleDesc: string;
+  throughputZerocostLabel: string;
+  throughputZerocostDesc: string;
+  throughputNote: string;
   pricingTitle: string;
   pricingSub: string;
   pricingPopular: string;
@@ -289,6 +296,15 @@ const MESSAGES: Record<Locale, Messages> = {
     checkingLabel: "Checking…",
     checkBtnLabel: "Check",
     upgradeCtaLabel: "Upgrade your plan →",
+    throughputTitle: "One key. Multiple providers. More headroom.",
+    throughputSub:
+      "Each provider has its own rate limit. zerocost distributes your requests across all of them — so you get the sum, not just one.",
+    throughputSingleLabel: "Single provider",
+    throughputSingleDesc: "Hits the rate limit on its own",
+    throughputZerocostLabel: "zerocost (3 providers)",
+    throughputZerocostDesc: "Distributes load — up to 3× capacity",
+    throughputNote:
+      "Actual limits vary by provider and model. Effective throughput depends on the number of providers you register.",
     pricingTitle: "Pricing",
     pricingSub: "Start free. Scale when you need more.",
     pricingPopular: "Popular",
@@ -470,6 +486,15 @@ const MESSAGES: Record<Locale, Messages> = {
     checkingLabel: "確認中…",
     checkBtnLabel: "確認",
     upgradeCtaLabel: "プランをアップグレード →",
+    throughputTitle: "1本のキーで、複数プロバイダーを束ねる。",
+    throughputSub:
+      "各プロバイダーにはそれぞれレートリミットがあります。zerocost はリクエストを自動で分散するので、1プロバイダーのリミットだけで詰まらなくなります。",
+    throughputSingleLabel: "単一プロバイダー",
+    throughputSingleDesc: "自力でレートリミットに到達",
+    throughputZerocostLabel: "zerocost（3プロバイダー）",
+    throughputZerocostDesc: "負荷を分散 — 最大3倍の処理容量",
+    throughputNote:
+      "実際の制限値はプロバイダー・モデルによって異なります。処理容量は登録したプロバイダー数によって変わります。",
     pricingTitle: "料金プラン",
     pricingSub: "無料から始めて、必要に応じてスケールアップ。",
     pricingPopular: "人気",
@@ -1248,6 +1273,77 @@ export default function HomePage() {
             </form>
           )}
         </div>
+      </section>
+
+      {/* スループット比較セクション */}
+      <section className="py-24 max-w-6xl mx-auto px-6">
+        <div className="text-center mb-14">
+          <h2
+            className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4"
+            style={{ fontFamily: "var(--font-bricolage)" }}
+          >
+            {m.throughputTitle}
+          </h2>
+          <p className="text-slate-500 max-w-xl mx-auto">{m.throughputSub}</p>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
+          {/* 単一プロバイダー */}
+          <div className="bg-white rounded-2xl border border-slate-100 p-8">
+            <p className="text-sm font-semibold text-slate-500 mb-6">
+              {m.throughputSingleLabel}
+            </p>
+            <div className="space-y-3 mb-6">
+              <div>
+                <div className="flex justify-between text-xs text-slate-400 mb-1">
+                  <span>Provider A</span>
+                  <span>100%</span>
+                </div>
+                <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-full w-full bg-red-300 rounded-full" />
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-red-500 font-medium pt-1">
+                <span>⚠</span>
+                <span>{m.throughputSingleDesc}</span>
+              </div>
+            </div>
+            <div className="text-3xl font-bold text-slate-900">1×</div>
+          </div>
+
+          {/* zerocost（3プロバイダー） */}
+          <div className="bg-indigo-50 rounded-2xl border border-indigo-100 p-8">
+            <p className="text-sm font-semibold text-indigo-600 mb-6">
+              {m.throughputZerocostLabel}
+            </p>
+            <div className="space-y-3 mb-6">
+              {(["Provider A", "Provider B", "Provider C"] as const).map(
+                (label, i) => (
+                  <div key={i}>
+                    <div className="flex justify-between text-xs text-slate-400 mb-1">
+                      <span>{label}</span>
+                      <span>33%</span>
+                    </div>
+                    <div className="h-3 bg-indigo-100 rounded-full overflow-hidden">
+                      <div className="h-full w-1/3 bg-indigo-400 rounded-full" />
+                    </div>
+                  </div>
+                )
+              )}
+              <div className="flex items-center gap-2 text-xs text-indigo-600 font-medium pt-1">
+                <span>✓</span>
+                <span>{m.throughputZerocostDesc}</span>
+              </div>
+            </div>
+            <div className="text-3xl font-bold text-indigo-700">
+              up to 3×
+            </div>
+          </div>
+        </div>
+
+        <p className="text-center text-xs text-slate-400 mt-8 max-w-md mx-auto">
+          {m.throughputNote}
+        </p>
       </section>
 
       {/* プライシングセクション */}
