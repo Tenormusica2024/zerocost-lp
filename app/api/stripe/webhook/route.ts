@@ -3,7 +3,8 @@ import Stripe from "stripe";
 import { getStripe } from "@/app/lib/stripe";
 import { getSupabaseAdmin } from "@/app/lib/supabase/admin";
 
-const ROUTER_URL = "https://zerocost-router.dragonrondo.workers.dev";
+const ROUTER_URL =
+  process.env.NEXT_PUBLIC_ROUTER_BASE ?? "https://zerocost-router.dragonrondo.workers.dev";
 
 export async function POST(req: NextRequest) {
   const body = await req.text(); // HMAC署名検証のために raw body が必要
@@ -105,11 +106,13 @@ export async function POST(req: NextRequest) {
         });
 
       if (insertError) {
-        // stripe_subscription_id の UNIQUE 制約違反は冪等性確保のため無視
         if (insertError.code === "23505") {
+          // stripe_subscription_id の UNIQUE 制約違反 → 同一イベントの重複配信。冪等性確保のため無視
           console.log(`Webhook: duplicate subscription ${subscriptionId}, skipped.`);
         } else {
+          // その他の INSERT エラー → 課金済みでキー未発行になるため 500 を返して Stripe にリトライさせる
           console.error("Supabase insert error in webhook:", insertError);
+          return new Response("Internal server error.", { status: 500 });
         }
       } else {
         console.log(`Webhook: new ${plan} key for ${email}`);

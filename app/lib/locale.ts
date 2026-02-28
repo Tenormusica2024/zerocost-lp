@@ -126,6 +126,31 @@ export const DASHBOARD_MESSAGES = {
         ],
       },
     },
+    upgrade: {
+      emailTitle: "メールアドレスを入力",
+      emailSubtitle: "Stripe の安全な決済ページへリダイレクトします。クレジットカード情報はこのサイトには入力しません。",
+      submit: (name: string) => `${name} プランで続ける →`,
+      submitting: "移動中…",
+      cancelNote: "30日以内はいつでもキャンセル可能。クレジットカードは Stripe が安全に管理します。",
+      backToPlans: "← プラン一覧に戻る",
+      plans: {
+        basic: {
+          price: "¥500 / 月",
+          features: ["5,000 リクエスト / 月", "5 プロバイダー", "自動フェイルオーバー", "OpenAI 互換 API", "優先ルーティング"],
+        },
+        pro: {
+          price: "¥1,500 / 月",
+          features: ["無制限リクエスト", "全プロバイダー", "スマートルーティング（クォータ認識）", "OpenAI 互換 API", "SLA 保証アップタイム", "使用量アナリティクス"],
+        },
+      },
+    },
+    success: {
+      title: "お支払いが完了しました",
+      body: "プランのアップグレードが完了しました。ダッシュボードから zc-key とプラン情報をご確認ください。",
+      toDashboard: "ダッシュボードへ →",
+      toHome: "トップページへ戻る",
+      portalNote: "キャンセル・変更は Stripe カスタマーポータルからいつでも可能です。",
+    },
   },
 
   en: {
@@ -230,6 +255,31 @@ export const DASHBOARD_MESSAGES = {
           "Copy and paste into the form below",
         ],
       },
+    },
+    upgrade: {
+      emailTitle: "Enter your email",
+      emailSubtitle: "You'll be redirected to Stripe's secure checkout. We never store your card details.",
+      submit: (name: string) => `Continue with ${name} →`,
+      submitting: "Redirecting…",
+      cancelNote: "Cancel anytime within 30 days. Your card is securely managed by Stripe.",
+      backToPlans: "← Back to plans",
+      plans: {
+        basic: {
+          price: "¥500 / month",
+          features: ["5,000 requests / month", "5 providers", "Automatic failover", "OpenAI-compatible API", "Priority routing"],
+        },
+        pro: {
+          price: "¥1,500 / month",
+          features: ["Unlimited requests", "All providers", "Smart routing (quota-aware)", "OpenAI-compatible API", "SLA uptime guarantee", "Usage analytics"],
+        },
+      },
+    },
+    success: {
+      title: "Payment complete",
+      body: "Your plan has been upgraded. Check your zc-key and plan details in the dashboard.",
+      toDashboard: "Go to dashboard →",
+      toHome: "Back to home",
+      portalNote: "Cancel or change anytime via the Stripe customer portal.",
     },
   },
 } as const;

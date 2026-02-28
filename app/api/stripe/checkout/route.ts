@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStripe } from "@/app/lib/stripe";
 
-const ROUTER_URL = "https://zerocost-router.dragonrondo.workers.dev";
-
 const APP_URL =
   process.env.NEXT_PUBLIC_APP_URL ?? "https://zerocost-lp.vercel.app";
 
@@ -15,11 +13,14 @@ const PLAN_PRICE: Record<string, { unit_amount: number; name: string }> = {
 export async function POST(req: NextRequest) {
   let email: string;
   let plan: string;
+  let stripeLocale: "ja" | "en";
 
   try {
     const body = await req.json();
     email = (body.email ?? "").trim().toLowerCase();
     plan  = (body.plan  ?? "").trim().toLowerCase();
+    // フロントエンドから locale を受け取り Stripe 決済画面の言語に反映（未指定時は ja）
+    stripeLocale = body.locale === "en" ? "en" : "ja";
   } catch {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
@@ -63,7 +64,7 @@ export async function POST(req: NextRequest) {
       customer: customerId,
       mode: "subscription",
       payment_method_types: ["card"],
-      locale: "ja",
+      locale: stripeLocale,
       line_items: [
         {
           price_data: {
@@ -77,7 +78,7 @@ export async function POST(req: NextRequest) {
       ],
       success_url: `${APP_URL}/upgrade/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url:  `${APP_URL}/#pricing`,
-      metadata: { email, plan, router_url: ROUTER_URL },
+      metadata: { email, plan },
     });
 
     return NextResponse.json({ url: session.url });
