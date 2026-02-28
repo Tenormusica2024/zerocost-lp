@@ -9,7 +9,6 @@ const SUPPORTED_PROVIDERS = [
     name: "Groq",
     description: "無料枠: 毎分1,000リクエスト / 10,000トークン",
     keyPageUrl: "https://console.groq.com/keys",
-    keyPageLabel: "Groq コンソールでキーを取得",
     placeholder: "gsk_...",
     steps: [
       "上のボタンでGroqコンソールを開く（新しいタブ）",
@@ -22,10 +21,9 @@ const SUPPORTED_PROVIDERS = [
     name: "Cerebras",
     description: "無料枠あり（レート制限は非公開）",
     keyPageUrl: "https://cloud.cerebras.ai",
-    keyPageLabel: "Cerebras クラウドでキーを取得",
     placeholder: "csk-...",
     steps: [
-      "上のボタンでCerebasクラウドを開く（新しいタブ）",
+      "上のボタンでCerebrasクラウドを開く（新しいタブ）",
       "API Keys メニューからキーを発行",
       "コピーして下のフォームに貼り付け",
     ],
@@ -35,7 +33,6 @@ const SUPPORTED_PROVIDERS = [
     name: "HuggingFace",
     description: "無料枠: Serverless Inference API",
     keyPageUrl: "https://huggingface.co/settings/tokens",
-    keyPageLabel: "HuggingFace でトークンを取得",
     placeholder: "hf_...",
     steps: [
       "上のボタンでHuggingFaceを開く（新しいタブ）",
