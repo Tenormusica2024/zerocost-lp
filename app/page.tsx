@@ -160,6 +160,7 @@ interface Messages {
   emailPlaceholder: string;
   submittingLabel: string;
   getKeyBtnLabel: string;
+  goToDashboardLabel: string;
   noSpam: string;
   agentTitle: string;
   agentSub: string;
@@ -273,6 +274,7 @@ const MESSAGES: Record<Locale, Messages> = {
     emailPlaceholder: "you@example.com",
     submittingLabel: "Generating…",
     getKeyBtnLabel: "Get free key",
+    goToDashboardLabel: "Go to Dashboard →",
     noSpam: "No spam. Used only to identify your key.",
     agentTitle: "Use with AI agents",
     agentSub:
@@ -463,6 +465,7 @@ const MESSAGES: Record<Locale, Messages> = {
     emailPlaceholder: "you@example.com",
     submittingLabel: "発行中…",
     getKeyBtnLabel: "無料キーを取得",
+    goToDashboardLabel: "ダッシュボードへ →",
     noSpam: "スパムなし。キーの識別にのみ使用します。",
     agentTitle: "AIエージェントで使う",
     agentSub:
@@ -1064,7 +1067,15 @@ export default function HomePage() {
             )}
           </p>
 
-          {apiKey ? (
+          {isLoggedIn ? (
+            /* ログイン済み: ダッシュボードへ誘導 */
+            <a
+              href="/dashboard/api-keys"
+              className="inline-flex items-center gap-2 px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-sm transition-colors"
+            >
+              {m.goToDashboardLabel}
+            </a>
+          ) : apiKey ? (
             /* キー発行済み表示 */
             <div className="bg-slate-50 border border-slate-200 rounded-2xl p-8 text-left">
               <div className="flex items-center gap-2 mb-3">
