@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
+import { useDashboardMessages } from "@/app/lib/useLocale";
 
 interface ApiKeyData {
   zcKey: string | null;
@@ -11,6 +11,9 @@ interface ApiKeyData {
 
 // API キー表示・コピーページ（クライアントコンポーネント）
 export default function ApiKeysPage() {
+  const { m: messages } = useDashboardMessages();
+  const m = messages.apiKeys;
+
   const [data, setData] = useState<ApiKeyData | null>(null);
   const [visible, setVisible] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -44,11 +47,9 @@ export default function ApiKeysPage() {
     <div className="p-8 max-w-3xl mx-auto">
       <div className="mb-8">
         <h1 className="text-xl font-semibold text-slate-900 tracking-tight">
-          API Keys
+          {m.title}
         </h1>
-        <p className="text-sm text-slate-500 mt-1">
-          Use this key as your Bearer token when calling the zerocost API
-        </p>
+        <p className="text-sm text-slate-500 mt-1">{m.subtitle}</p>
       </div>
 
       {/* API キーカード */}
@@ -56,14 +57,12 @@ export default function ApiKeysPage() {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-sm font-semibold text-slate-900">
-              Secret API key
+              {m.secretKey}
             </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Keep this secret. Do not share or commit to version control.
-            </p>
+            <p className="text-xs text-slate-500 mt-0.5">{m.secretKeyDesc}</p>
           </div>
           <span className="text-xs px-2 py-0.5 rounded bg-green-50 text-green-700 font-medium">
-            Active
+            {m.active}
           </span>
         </div>
 
@@ -80,7 +79,7 @@ export default function ApiKeysPage() {
             {/* 表示トグル */}
             <button
               onClick={() => setVisible((v) => !v)}
-              title={visible ? "Hide key" : "Show key"}
+              title={visible ? m.hideKey : m.showKey}
               className="p-2.5 rounded-lg border border-slate-200 text-slate-500 hover:text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
             >
               {visible ? (
@@ -98,7 +97,7 @@ export default function ApiKeysPage() {
             {/* コピー */}
             <button
               onClick={handleCopy}
-              title="Copy to clipboard"
+              title={m.copyToClipboard}
               className="p-2.5 rounded-lg border border-slate-200 text-slate-500 hover:text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
             >
               {copied ? (
@@ -113,16 +112,14 @@ export default function ApiKeysPage() {
             </button>
           </div>
         ) : (
-          <p className="text-sm text-slate-400">
-            No API key found. Please contact support.
-          </p>
+          <p className="text-sm text-slate-400">{m.noApiKey}</p>
         )}
       </div>
 
       {/* 使い方 */}
       <div className="bg-white rounded-xl border border-slate-100 p-6 mb-6">
         <h2 className="text-sm font-semibold text-slate-900 mb-4">
-          How to use
+          {m.howToUse}
         </h2>
         <div className="space-y-3 text-sm">
           <div>
@@ -158,21 +155,19 @@ response = client.chat.completions.create(
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-sm font-semibold text-slate-900">
-              Regenerate key
+              {m.regenerateKey}
             </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Invalidates your current key and issues a new one
-            </p>
+            <p className="text-xs text-slate-500 mt-0.5">{m.regenerateDesc}</p>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-xs px-2 py-0.5 rounded bg-slate-100 text-slate-500 font-medium">
-              Coming soon
+              {m.comingSoon}
             </span>
             <button
               disabled
               className="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-400 bg-slate-50 border border-slate-100 cursor-not-allowed"
             >
-              Regenerate
+              {m.regenerate}
             </button>
           </div>
         </div>

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/app/lib/supabase/server";
 import { getSupabaseAdmin } from "@/app/lib/supabase/admin";
+import { getServerLocale, DASHBOARD_MESSAGES } from "@/app/lib/locale";
 
 interface UsageData {
   requests_this_month: number;
@@ -55,23 +56,26 @@ export default async function UsagePage() {
   const usagePercent = Math.min(Math.round((used / limit) * 100), 100);
   const remaining = Math.max(limit - used, 0);
 
+  const locale = await getServerLocale();
+  const m = DASHBOARD_MESSAGES[locale].usage;
+
   const resetDate = usage?.reset_at
-    ? new Date(usage.reset_at).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
+    ? new Date(usage.reset_at).toLocaleDateString(
+        locale === "ja" ? "ja-JP" : "en-US",
+        { year: "numeric", month: "long", day: "numeric" }
+      )
     : null;
+
+  const planLabel =
+    plan === "pro" ? "Pro" : plan === "basic" ? "Basic" : "Free";
 
   return (
     <div className="p-8 max-w-3xl mx-auto">
       <div className="mb-8">
         <h1 className="text-xl font-semibold text-slate-900 tracking-tight">
-          Usage
+          {m.title}
         </h1>
-        <p className="text-sm text-slate-500 mt-1">
-          Monthly API request usage for your account
-        </p>
+        <p className="text-sm text-slate-500 mt-1">{m.subtitle}</p>
       </div>
 
       {/* 使用量メインカード */}
@@ -79,7 +83,7 @@ export default async function UsagePage() {
         <div className="flex items-start justify-between mb-6">
           <div>
             <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
-              Requests this month
+              {m.requestsThisMonth}
             </p>
             <div className="flex items-baseline gap-2">
               <span className="text-3xl font-bold text-slate-900">
@@ -99,7 +103,7 @@ export default async function UsagePage() {
                 : "bg-green-50 text-green-700"
             }`}
           >
-            {usagePercent}% used
+            {m.usedPct(usagePercent)}
           </span>
         </div>
 
@@ -121,19 +125,19 @@ export default async function UsagePage() {
       {/* 統計グリッド */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="bg-white rounded-xl border border-slate-100 p-5">
-          <p className="text-xs text-slate-500 mb-1">Remaining</p>
+          <p className="text-xs text-slate-500 mb-1">{m.remaining}</p>
           <p className="text-xl font-bold text-slate-900">
             {remaining.toLocaleString()}
           </p>
         </div>
         <div className="bg-white rounded-xl border border-slate-100 p-5">
-          <p className="text-xs text-slate-500 mb-1">Today</p>
+          <p className="text-xs text-slate-500 mb-1">{m.today}</p>
           <p className="text-xl font-bold text-slate-900">
             {usage?.requests_today?.toLocaleString() ?? "—"}
           </p>
         </div>
         <div className="bg-white rounded-xl border border-slate-100 p-5">
-          <p className="text-xs text-slate-500 mb-1">Resets on</p>
+          <p className="text-xs text-slate-500 mb-1">{m.resetsOn}</p>
           <p className="text-base font-bold text-slate-900">
             {resetDate ?? "—"}
           </p>
@@ -144,9 +148,9 @@ export default async function UsagePage() {
       <div className="bg-white rounded-xl border border-slate-100 p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-sm font-semibold text-slate-900">Your plan</h2>
+            <h2 className="text-sm font-semibold text-slate-900">{m.yourPlan}</h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              {limit.toLocaleString()} requests / month
+              {m.requestsPerMonth(limit.toLocaleString())}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -159,12 +163,10 @@ export default async function UsagePage() {
                   : "bg-slate-100 text-slate-600"
               }`}
             >
-              {plan === "pro" ? "Pro" : plan === "basic" ? "Basic" : "Free"}
+              {planLabel}
             </span>
             {plan === "free" && (
-              <span className="text-xs text-slate-400">
-                Upgrade coming soon
-              </span>
+              <span className="text-xs text-slate-400">{m.upgradeSoon}</span>
             )}
           </div>
         </div>
@@ -173,8 +175,7 @@ export default async function UsagePage() {
       {/* データ未取得の場合の注記 */}
       {!usage && zcKey && (
         <p className="mt-4 text-xs text-slate-400 text-center">
-          Usage data is unavailable. Stats will appear once you make your first
-          API call.
+          {m.noUsageData}
         </p>
       )}
     </div>

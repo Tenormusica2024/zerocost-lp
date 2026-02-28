@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/app/lib/supabase/server";
 import { getSupabaseAdmin } from "@/app/lib/supabase/admin";
+import { getServerLocale, DASHBOARD_MESSAGES } from "@/app/lib/locale";
 
 const PLAN_LIMITS: Record<string, { requests: number; label: string }> = {
   free: { requests: 1000, label: "Free" },
@@ -56,15 +57,18 @@ export default async function DashboardPage() {
     100
   );
 
+  const locale = await getServerLocale();
+  const m = DASHBOARD_MESSAGES[locale].overview;
+
   return (
     <div className="p-8 max-w-4xl mx-auto">
       {/* ページヘッダー */}
       <div className="mb-8">
         <h1 className="text-xl font-semibold text-slate-900 tracking-tight">
-          Overview
+          {m.title}
         </h1>
         <p className="text-sm text-slate-500 mt-1">
-          Welcome back, {user.email}
+          {m.welcome(user.email ?? "")}
         </p>
       </div>
 
@@ -73,7 +77,7 @@ export default async function DashboardPage() {
         {/* プランカード */}
         <div className="bg-white rounded-xl border border-slate-100 p-5">
           <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
-            Current plan
+            {m.currentPlan}
           </p>
           <div className="flex items-end justify-between">
             <span className="text-2xl font-bold text-slate-900">
@@ -88,7 +92,7 @@ export default async function DashboardPage() {
                   : "bg-slate-100 text-slate-600"
               }`}
             >
-              {keyRow?.status === "active" ? "Active" : "Inactive"}
+              {keyRow?.status === "active" ? m.active : m.inactive}
             </span>
           </div>
         </div>
@@ -96,7 +100,7 @@ export default async function DashboardPage() {
         {/* 使用量カード */}
         <div className="bg-white rounded-xl border border-slate-100 p-5">
           <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
-            Requests this month
+            {m.requestsThisMonth}
           </p>
           <div className="flex items-end gap-1">
             <span className="text-2xl font-bold text-slate-900">
@@ -124,14 +128,14 @@ export default async function DashboardPage() {
         {/* リセット日カード */}
         <div className="bg-white rounded-xl border border-slate-100 p-5">
           <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
-            Resets on
+            {m.resetsOn}
           </p>
           <span className="text-2xl font-bold text-slate-900">
             {usageData?.reset_at
-              ? new Date(usageData.reset_at).toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                })
+              ? new Date(usageData.reset_at).toLocaleDateString(
+                  locale === "ja" ? "ja-JP" : "en-US",
+                  { month: "short", day: "numeric" }
+                )
               : "—"}
           </span>
         </div>
@@ -140,12 +144,12 @@ export default async function DashboardPage() {
       {/* API キープレビュー */}
       <div className="bg-white rounded-xl border border-slate-100 p-6 mb-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-slate-900">Your API key</h2>
+          <h2 className="text-sm font-semibold text-slate-900">{m.yourApiKey}</h2>
           <Link
             href="/dashboard/api-keys"
             className="text-xs text-indigo-600 hover:underline font-medium"
           >
-            Manage
+            {m.manage}
           </Link>
         </div>
         {maskedKey ? (
@@ -155,14 +159,14 @@ export default async function DashboardPage() {
             </code>
           </div>
         ) : (
-          <p className="text-sm text-slate-400">No API key found.</p>
+          <p className="text-sm text-slate-400">{m.noApiKey}</p>
         )}
       </div>
 
       {/* クイックスタートガイド */}
       <div className="bg-white rounded-xl border border-slate-100 p-6">
         <h2 className="text-sm font-semibold text-slate-900 mb-4">
-          Quick start
+          {m.quickStart}
         </h2>
         <div className="space-y-3 text-sm text-slate-600">
           <div className="flex items-start gap-3">
@@ -170,11 +174,11 @@ export default async function DashboardPage() {
               1
             </span>
             <span>
-              Go to{" "}
+              {m.step1Pre}
               <Link href="/dashboard/providers" className="text-indigo-600 hover:underline">
-                Providers
-              </Link>{" "}
-              and register your Groq, Cerebras, or HuggingFace API keys
+                {m.step1Link}
+              </Link>
+              {m.step1Post}
             </span>
           </div>
           <div className="flex items-start gap-3">
@@ -182,10 +186,11 @@ export default async function DashboardPage() {
               2
             </span>
             <span>
-              Copy your zerocost API key from{" "}
+              {m.step2Pre}
               <Link href="/dashboard/api-keys" className="text-indigo-600 hover:underline">
-                API Keys
+                {m.step2Link}
               </Link>
+              {m.step2Post}
             </span>
           </div>
           <div className="flex items-start gap-3">
@@ -193,11 +198,11 @@ export default async function DashboardPage() {
               3
             </span>
             <span>
-              Set{" "}
+              {m.step3Pre}
               <code className="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono">
                 base_url={process.env.NEXT_PUBLIC_ROUTER_BASE}/v1
-              </code>{" "}
-              in your OpenAI client
+              </code>
+              {m.step3Post}
             </span>
           </div>
         </div>

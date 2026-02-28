@@ -2,47 +2,30 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/app/lib/supabase/server";
 import { getSupabaseAdmin } from "@/app/lib/supabase/admin";
 import { addProvider, deleteProvider } from "./actions";
+import { getServerLocale, DASHBOARD_MESSAGES } from "@/app/lib/locale";
 
-const SUPPORTED_PROVIDERS = [
+const PROVIDER_META = [
   {
-    slug: "groq",
+    slug: "groq" as const,
     name: "Groq",
-    description: "無料枠: 毎分1,000リクエスト / 10,000トークン",
     keyPageUrl: "https://console.groq.com/keys",
     placeholder: "gsk_...",
-    steps: [
-      "上のボタンでGroqコンソールを開く（新しいタブ）",
-      "「Create API Key」でキーを発行",
-      "コピーして下のフォームに貼り付け",
-    ],
   },
   {
-    slug: "cerebras",
+    slug: "cerebras" as const,
     name: "Cerebras",
-    description: "無料枠あり（レート制限は非公開）",
     keyPageUrl: "https://cloud.cerebras.ai",
     placeholder: "csk-...",
-    steps: [
-      "上のボタンでCerebrasクラウドを開く（新しいタブ）",
-      "API Keys メニューからキーを発行",
-      "コピーして下のフォームに貼り付け",
-    ],
   },
   {
-    slug: "huggingface",
+    slug: "huggingface" as const,
     name: "HuggingFace",
-    description: "無料枠: Serverless Inference API",
     keyPageUrl: "https://huggingface.co/settings/tokens",
     placeholder: "hf_...",
-    steps: [
-      "上のボタンでHuggingFaceを開く（新しいタブ）",
-      "「New token」でトークンを発行（Read権限でOK）",
-      "コピーして下のフォームに貼り付け",
-    ],
   },
 ] as const;
 
-type ProviderSlug = (typeof SUPPORTED_PROVIDERS)[number]["slug"];
+type ProviderSlug = (typeof PROVIDER_META)[number]["slug"];
 
 interface RegisteredProvider {
   provider: string;
@@ -87,29 +70,29 @@ export default async function ProvidersPage() {
     }
   }
 
-  const registeredSlugs = new Set(
-    registeredProviders.map((p) => p.provider)
-  );
+  const registeredSlugs = new Set(registeredProviders.map((p) => p.provider));
+
+  const locale = await getServerLocale();
+  const mp = DASHBOARD_MESSAGES[locale].providers;
+  const pd = DASHBOARD_MESSAGES[locale].providerData;
 
   return (
     <div className="p-8 max-w-3xl mx-auto">
       <div className="mb-8">
         <h1 className="text-xl font-semibold text-slate-900 tracking-tight">
-          プロバイダー設定
+          {mp.title}
         </h1>
-        <p className="text-sm text-slate-500 mt-1">
-          各プロバイダーの無料 API キーを登録すると、zerocost が自動でリクエストを振り分けます。
-          登録するほど使える量が増えます。
-        </p>
+        <p className="text-sm text-slate-500 mt-1">{mp.subtitle}</p>
       </div>
 
       {/* プロバイダーカード一覧 */}
       <div className="space-y-4">
-        {SUPPORTED_PROVIDERS.map((sp) => {
+        {PROVIDER_META.map((sp) => {
           const registered = registeredProviders.find(
             (p) => p.provider === sp.slug
           );
           const isRegistered = registeredSlugs.has(sp.slug as ProviderSlug);
+          const providerText = pd[sp.slug];
 
           return (
             <div
@@ -125,12 +108,12 @@ export default async function ProvidersPage() {
                     </h2>
                     {isRegistered && (
                       <span className="text-xs px-2 py-0.5 rounded bg-green-50 text-green-700 font-medium">
-                        登録済み
+                        {mp.registered}
                       </span>
                     )}
                   </div>
                   <p className="text-xs text-slate-400 mt-0.5">
-                    {sp.description}
+                    {providerText.description}
                   </p>
                 </div>
                 {/* API キー取得ページへのリンク（常に表示） */}
@@ -140,7 +123,7 @@ export default async function ProvidersPage() {
                   rel="noopener noreferrer"
                   className="shrink-0 text-xs px-3 py-1.5 rounded-lg border border-indigo-200 text-indigo-600 hover:bg-indigo-50 transition-colors font-medium"
                 >
-                  キーを取得 →
+                  {mp.getKey}
                 </a>
               </div>
 
@@ -155,7 +138,7 @@ export default async function ProvidersPage() {
                       type="submit"
                       className="text-xs text-red-500 hover:text-red-700 transition-colors cursor-pointer"
                     >
-                      削除
+                      {mp.deleteKey}
                     </button>
                   </form>
                 </div>
@@ -166,7 +149,7 @@ export default async function ProvidersPage() {
                 <div className="px-6 py-4">
                   {/* 取得手順 */}
                   <ol className="text-xs text-slate-500 space-y-1 mb-4 list-decimal list-inside">
-                    {sp.steps.map((step, i) => (
+                    {providerText.steps.map((step, i) => (
                       <li key={i}>{step}</li>
                     ))}
                   </ol>
@@ -178,14 +161,14 @@ export default async function ProvidersPage() {
                       name="api_key"
                       type="password"
                       required
-                      placeholder={`ここに貼り付け（${sp.placeholder}）`}
+                      placeholder={mp.pasteHere(sp.placeholder)}
                       className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 font-mono placeholder:font-sans placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                     />
                     <button
                       type="submit"
                       className="shrink-0 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 active:bg-indigo-800 transition-colors cursor-pointer"
                     >
-                      登録
+                      {mp.register}
                     </button>
                   </form>
                 </div>
@@ -199,18 +182,14 @@ export default async function ProvidersPage() {
       <details className="mt-8 group">
         <summary className="text-xs text-slate-400 hover:text-slate-600 cursor-pointer select-none list-none flex items-center gap-1">
           <span className="group-open:rotate-90 transition-transform inline-block">▶</span>
-          エンジニア向け: CLI でまとめて設定する
+          {mp.cliTitle}
         </summary>
         <div className="mt-3 bg-slate-50 rounded-lg p-4 border border-slate-100">
-          <p className="text-xs text-slate-500 mb-2">
-            ターミナルから対話形式でプロバイダーキーを一括設定できます:
-          </p>
+          <p className="text-xs text-slate-500 mb-2">{mp.cliDesc}</p>
           <code className="block text-xs font-mono text-slate-700 bg-white border border-slate-200 rounded px-3 py-2">
             npx zerocost setup
           </code>
-          <p className="text-xs text-slate-400 mt-2">
-            ※ CLI は現在開発中です。近日公開予定。
-          </p>
+          <p className="text-xs text-slate-400 mt-2">{mp.cliNote}</p>
         </div>
       </details>
     </div>
