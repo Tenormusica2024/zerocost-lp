@@ -238,7 +238,7 @@ const MESSAGES: Record<Locale, Messages> = {
       },
       {
         step: "03",
-        title: "Use as OpenAI API",
+        title: "Make your first API call",
         description: "Point your client at zerocost. Done.",
       },
     ],
@@ -409,7 +409,7 @@ const MESSAGES: Record<Locale, Messages> = {
       },
       {
         step: "03",
-        title: "OpenAI APIとして使用",
+        title: "そのままAPIを呼び出す",
         description: "クライアントのエンドポイントをzerocostに向けるだけ。完了。",
       },
     ],
