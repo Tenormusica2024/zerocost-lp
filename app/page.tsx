@@ -146,39 +146,39 @@ const ROUTER_BASE =
   "https://zerocost-router.dragonrondo.workers.dev";
 
 // AIエージェント向けセットアッププロンプト（コピーして任意のAIに貼り付けるだけで自動セットアップ）
-const AGENT_PROMPT = `zerocost-routerをセットアップしてください。
+const AGENT_PROMPT = `Set up zerocost-router for me.
 
-## zerocost-routerとは
-OpenAI互換エンドポイントを無料LLMプロバイダー（Groq・Cerebras・HuggingFace）で提供するプロキシAPIです。
-エンドポイント: https://zerocost-router.dragonrondo.workers.dev/v1
+## What is zerocost-router?
+A proxy API that provides an OpenAI-compatible endpoint backed by free-tier LLM providers (Groq, Cerebras, HuggingFace).
+Endpoint base URL: https://zerocost-router.dragonrondo.workers.dev/v1
 
-## セットアップ手順
+## Setup steps
 
-### Step 1: zc-keyを発行
+### Step 1: Issue a zc-key
 curl -s -X POST https://zerocost-router.dragonrondo.workers.dev/v1/keys
-→ レスポンスの "key" フィールドをメモ（例: zc-xxxxxxxx...）
+→ Save the "key" value from the response (e.g. zc-xxxxxxxx...)
 
-### Step 2: Groqの無料APIキーを取得
-https://console.groq.com にアクセスしてアカウント作成し、APIキーを生成してください。
+### Step 2: Get a free Groq API key
+Sign up at https://console.groq.com and generate an API key.
 
-### Step 3: プロバイダーキーを登録
+### Step 3: Register the provider key
 curl -X POST https://zerocost-router.dragonrondo.workers.dev/v1/keys/providers \\
   -H "Authorization: Bearer <zc-key>" \\
   -H "Content-Type: application/json" \\
   -d '{"provider_id":"groq","api_key":"<groq-api-key>","priority":0}'
 
-### Step 4: 動作確認
+### Step 4: Verify it works
 curl -X POST https://zerocost-router.dragonrondo.workers.dev/v1/chat/completions \\
   -H "Authorization: Bearer <zc-key>" \\
   -H "Content-Type: application/json" \\
   -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"Hello"}],"max_tokens":50}'
 
-### Step 5: OpenAI SDKで使用
+### Step 5: Use with OpenAI SDK
 base_url = "https://zerocost-router.dragonrondo.workers.dev/v1"
 api_key  = "<zc-key>"
-上記設定でOpenAI SDKをそのまま使用できます。
+Use these settings in place of the standard OpenAI client configuration.
 
-完了後、取得したzc-keyを教えてください。`;
+Once done, let me know the zc-key you received.`;
 
 interface UsageData {
   plan: string;
