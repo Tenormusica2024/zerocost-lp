@@ -58,6 +58,28 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // 既存アクティブサブスクリプションの確認（二重課金防止）
+  try {
+    const subs = await stripe.subscriptions.list({
+      customer: customerId,
+      status: "active",
+      limit: 1,
+    });
+    if (subs.data.length > 0) {
+      const alreadyMsg =
+        stripeLocale === "ja"
+          ? "このメールアドレスはすでに有効なサブスクリプションがあります。ダッシュボードからプランをご確認ください。"
+          : "This email already has an active subscription. Check your plan in the dashboard.";
+      return NextResponse.json({ error: alreadyMsg }, { status: 409 });
+    }
+  } catch (err) {
+    console.error("Stripe subscriptions list error:", err);
+    return NextResponse.json(
+      { error: "Payment service temporarily unavailable." },
+      { status: 502 }
+    );
+  }
+
   // Checkout Session 作成（月次サブスクリプション）
   try {
     const session = await stripe.checkout.sessions.create({
