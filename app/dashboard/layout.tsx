@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/app/lib/supabase/server";
 import { getSupabaseAdmin } from "@/app/lib/supabase/admin";
 import { getServerLocale, DASHBOARD_MESSAGES } from "@/app/lib/locale";
+import { LocaleToggle } from "@/app/components/LocaleToggle";
 
 // ログアウト Server Action
 async function signOut() {
@@ -149,6 +150,9 @@ export default async function DashboardLayout({
               {m.sidebar.signOut}
             </button>
           </form>
+
+          {/* 言語トグル */}
+          <LocaleToggle currentLocale={locale} />
         </div>
       </aside>
 

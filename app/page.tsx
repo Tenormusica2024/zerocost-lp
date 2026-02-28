@@ -634,8 +634,16 @@ interface UsageData {
 export default function HomePage() {
   const [locale, setLocale] = useState<Locale>("en");
 
-  // ブラウザの言語設定を自動検出（日本語ユーザーはjaに切り替え）
+  // 言語初期化: Cookie → navigator.language の優先順位
   useEffect(() => {
+    const match = document.cookie
+      .split(";")
+      .find((c) => c.trim().startsWith("zerocost_locale="));
+    const saved = match?.split("=")[1]?.trim();
+    if (saved === "ja" || saved === "en") {
+      setLocale(saved);
+      return;
+    }
     if (navigator.language.startsWith("ja")) setLocale("ja");
   }, []);
 
@@ -783,7 +791,10 @@ export default function HomePage() {
             {/* 言語切り替えボタン */}
             <div className="flex items-center gap-1 text-sm font-semibold">
               <button
-                onClick={() => setLocale("ja")}
+                onClick={() => {
+                  setLocale("ja");
+                  document.cookie = "zerocost_locale=ja; path=/; max-age=31536000; samesite=lax";
+                }}
                 className={`px-1.5 transition-colors ${
                   locale === "ja"
                     ? "text-slate-900"
@@ -794,7 +805,10 @@ export default function HomePage() {
               </button>
               <span className="text-slate-200">|</span>
               <button
-                onClick={() => setLocale("en")}
+                onClick={() => {
+                  setLocale("en");
+                  document.cookie = "zerocost_locale=en; path=/; max-age=31536000; samesite=lax";
+                }}
                 className={`px-1.5 transition-colors ${
                   locale === "en"
                     ? "text-slate-900"
