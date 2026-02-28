@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const routerData = await routerRes.json();
+    const routerData = await routerRes.json() as { key: string };
     zcKey = routerData.key;
 
     if (!zcKey) {
