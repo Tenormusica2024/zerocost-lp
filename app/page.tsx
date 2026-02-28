@@ -145,6 +145,41 @@ const ROUTER_BASE =
   process.env.NEXT_PUBLIC_ROUTER_BASE ??
   "https://zerocost-router.dragonrondo.workers.dev";
 
+// AIエージェント向けセットアッププロンプト（コピーして任意のAIに貼り付けるだけで自動セットアップ）
+const AGENT_PROMPT = `zerocost-routerをセットアップしてください。
+
+## zerocost-routerとは
+OpenAI互換エンドポイントを無料LLMプロバイダー（Groq・Cerebras・HuggingFace）で提供するプロキシAPIです。
+エンドポイント: https://zerocost-router.dragonrondo.workers.dev/v1
+
+## セットアップ手順
+
+### Step 1: zc-keyを発行
+curl -s -X POST https://zerocost-router.dragonrondo.workers.dev/v1/keys
+→ レスポンスの "key" フィールドをメモ（例: zc-xxxxxxxx...）
+
+### Step 2: Groqの無料APIキーを取得
+https://console.groq.com にアクセスしてアカウント作成し、APIキーを生成してください。
+
+### Step 3: プロバイダーキーを登録
+curl -X POST https://zerocost-router.dragonrondo.workers.dev/v1/keys/providers \\
+  -H "Authorization: Bearer <zc-key>" \\
+  -H "Content-Type: application/json" \\
+  -d '{"provider_id":"groq","api_key":"<groq-api-key>","priority":0}'
+
+### Step 4: 動作確認
+curl -X POST https://zerocost-router.dragonrondo.workers.dev/v1/chat/completions \\
+  -H "Authorization: Bearer <zc-key>" \\
+  -H "Content-Type: application/json" \\
+  -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"Hello"}],"max_tokens":50}'
+
+### Step 5: OpenAI SDKで使用
+base_url = "https://zerocost-router.dragonrondo.workers.dev/v1"
+api_key  = "<zc-key>"
+上記設定でOpenAI SDKをそのまま使用できます。
+
+完了後、取得したzc-keyを教えてください。`;
+
 interface UsageData {
   plan: string;
   used: number;
@@ -159,6 +194,9 @@ export default function HomePage() {
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+
+  // AIエージェント向けプロンプトコピー
+  const [agentPromptCopied, setAgentPromptCopied] = useState(false);
 
   // 使用量確認
   const [usageKey, setUsageKey] = useState("");
@@ -192,6 +230,12 @@ export default function HomePage() {
     await navigator.clipboard.writeText(apiKey);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleCopyAgentPrompt = async () => {
+    await navigator.clipboard.writeText(AGENT_PROMPT);
+    setAgentPromptCopied(true);
+    setTimeout(() => setAgentPromptCopied(false), 2000);
   };
 
   const handleCheckUsage = async (e: React.FormEvent) => {
@@ -413,6 +457,51 @@ export default function HomePage() {
               </p>
             </form>
           )}
+        </div>
+      </section>
+
+      {/* AIエージェント向けセクション */}
+      <section id="agent" className="bg-slate-50 border-y border-slate-100 py-24">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="max-w-2xl mx-auto text-center">
+            <h2
+              className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4"
+              style={{ fontFamily: "var(--font-bricolage)" }}
+            >
+              Use with AI agents
+            </h2>
+            <p className="text-slate-500 mb-10">
+              Copy the prompt below and paste it into your AI agent.
+              It will set up zerocost automatically — no manual steps needed.
+            </p>
+
+            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden text-left">
+              {/* ヘッダーバー */}
+              <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-100 bg-slate-50">
+                <span className="text-xs font-semibold text-slate-400 font-mono">
+                  setup prompt
+                </span>
+                <button
+                  onClick={handleCopyAgentPrompt}
+                  className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-all ${
+                    agentPromptCopied
+                      ? "bg-green-100 text-green-700"
+                      : "bg-indigo-50 text-indigo-600 hover:bg-indigo-100"
+                  }`}
+                >
+                  {agentPromptCopied ? "Copied!" : "Copy"}
+                </button>
+              </div>
+              {/* プロンプト本文 */}
+              <pre className="text-xs text-slate-600 font-mono p-5 leading-relaxed whitespace-pre-wrap overflow-x-auto max-h-72 overflow-y-auto">
+                {AGENT_PROMPT}
+              </pre>
+            </div>
+
+            <p className="text-xs text-slate-400 mt-4">
+              Works with any OpenAI-compatible AI agent or coding assistant.
+            </p>
+          </div>
         </div>
       </section>
 
