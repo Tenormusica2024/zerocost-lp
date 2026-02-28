@@ -48,7 +48,7 @@ supabase/
 |--------|------|---------|
 | `SUPABASE_URL` | `https://hzofpqlhrlveqnjsoaae.supabase.co` | Vercel REST API で設定（⚠️ echo禁止） |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase service_role JWT | Vercel REST API で設定（⚠️ echo禁止） |
-| `NEXT_PUBLIC_APP_URL` | `https://zerocost-lp.vercel.app` | Vercel Dashboard or CLI |
+| `NEXT_PUBLIC_APP_URL` | `https://zerocost-lp.vercel.app` | Vercel Dashboard or CLI（現在のコードでは未参照。OGタグ等の将来利用想定） |
 
 ### ローカル開発
 
@@ -76,7 +76,7 @@ cp .env.local.example .env.local
 
 **フロー:**
 1. メール形式バリデーション
-2. Supabase で重複チェック（同一メールのキーが既にあれば 409）
+2. Supabase で重複チェック（同一メールのアクティブなキーが既にあれば **200 + 既存キーを返して終了**。冪等性設計）
 3. `POST https://zerocost-router.dragonrondo.workers.dev/v1/keys` → zc-key 取得
 4. Supabase `zerocost_keys` テーブルに INSERT
 
@@ -132,6 +132,7 @@ git push origin master
 ```bash
 cd "D:\antigravity_projects\zerocost-lp"
 npx vercel --prod --yes
+# ⚠️ bash から実行すると出力なしで失敗する場合あり → 学んだ教訓参照
 ```
 
 ### ビルド確認
