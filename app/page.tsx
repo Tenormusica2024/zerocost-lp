@@ -363,7 +363,7 @@ const MESSAGES: Record<Locale, Messages> = {
     navCta: "無料で始める",
     heroBadge: "OpenAI互換 · Groq · Cerebras · HuggingFace",
     heroTitle1: "LLMルーティングを無料で",
-    heroTitle2: "コストゼロ、手間ゼロ",
+    heroTitle2: "コストゼロ、移行ゼロ",
     heroSub:
       "APIキー1本で、最速の無料LLMプロバイダーに自動フェイルオーバー。OpenAIの完全互換 — コード1行変えるだけ。",
     featuresTitle: "推論コストを払いたくない開発者のために",
