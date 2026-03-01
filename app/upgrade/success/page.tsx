@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { getServerLocale, DASHBOARD_MESSAGES } from "@/app/lib/locale";
+import { getServerLocale } from "@/app/lib/server-locale";
+import { DASHBOARD_MESSAGES } from "@/app/lib/locale";
 
 export default async function UpgradeSuccessPage() {
   const locale = await getServerLocale();

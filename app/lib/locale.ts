@@ -1,23 +1,7 @@
-import { headers, cookies } from "next/headers";
-
 export type Locale = "ja" | "en";
 
 /** Cookie のキー名（LP と dashboard で共有） */
 export const LOCALE_COOKIE = "zerocost_locale";
-
-/**
- * サーバーコンポーネント用: ロケール判定
- * 優先順位: Cookie > Accept-Language ヘッダー > "en"
- */
-export async function getServerLocale(): Promise<Locale> {
-  const cookieStore = await cookies();
-  const saved = cookieStore.get(LOCALE_COOKIE)?.value;
-  if (saved === "ja" || saved === "en") return saved;
-
-  const h = await headers();
-  const acceptLang = h.get("accept-language") ?? "";
-  return acceptLang.toLowerCase().startsWith("ja") ? "ja" : "en";
-}
 
 // ---- 翻訳テーブル ----
 

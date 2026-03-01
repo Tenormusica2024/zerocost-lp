@@ -2,7 +2,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/app/lib/supabase/server";
 import { getSupabaseAdmin } from "@/app/lib/supabase/admin";
 import { addProvider, deleteProvider } from "./actions";
-import { getServerLocale, DASHBOARD_MESSAGES } from "@/app/lib/locale";
+import { getServerLocale } from "@/app/lib/server-locale";
+import { DASHBOARD_MESSAGES } from "@/app/lib/locale";
 
 const PROVIDER_META = [
   {

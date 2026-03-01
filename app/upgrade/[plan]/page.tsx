@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getServerLocale } from "@/app/lib/locale";
+import { getServerLocale } from "@/app/lib/server-locale";
 import { UpgradeForm } from "./UpgradeForm";
 
 const VALID_PLANS = ["basic", "pro"] as const;
