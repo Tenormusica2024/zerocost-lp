@@ -17,6 +17,7 @@ zerocost-router のランディングページ。メールアドレスを入力�
 | Tailwind CSS | v4 | スタイリング |
 | TypeScript | ^5 | 型定義 |
 | @supabase/supabase-js | ^2.98.0 | DBクライアント |
+| stripe | ^17 | Stripe Node.js SDK |
 | Vercel | - | ホスティング |
 | Supabase | - | PostgreSQL DB（zerocost_keysテーブル） |
 
@@ -30,14 +31,41 @@ app/
   api/
     register/
       route.ts             # POST /api/register: メール → zc-key発行 → Supabase保存
+    stripe/
+      checkout/
+        route.ts           # POST /api/stripe/checkout: Stripe Checkout Session 作成 → URL返却
+      webhook/
+        route.ts           # POST /api/stripe/webhook: Webhook署名検証 → plan更新・zc-key発行
+  upgrade/
+    [plan]/
+      page.tsx             # /upgrade/basic|pro: メール入力 → Checkout Session → Stripe Checkout
+    success/
+      page.tsx             # /upgrade/success: 支払い完了ページ（アニメーションあり）
+  dashboard/
+    layout.tsx             # サイドバー付きダッシュボードレイアウト（i18n対応）
+    page.tsx               # ダッシュボードトップ（使用量・プラン・APIキー概要）
+    api-keys/
+      page.tsx             # APIキー管理（表示・再発行）
+    providers/
+      page.tsx             # プロバイダーキー登録（Groq/Cerebras/HuggingFace）
+      actions.ts           # addProvider / deleteProvider Server Actions
+    usage/
+      page.tsx             # 使用量詳細（月次グラフ・リセット日）
   lib/
     supabase/
       admin.ts             # Supabase admin クライアント（遅延初期化パターン）
+      server.ts            # Supabase SSR クライアント（createServerClient）
+    locale.ts              # クライアント向けロケール定義（DASHBOARD_MESSAGES等）
+    server-locale.ts       # サーバー向けロケール取得（next/headers依存。localeと分離必須）
+    stripe.ts              # Stripe クライアント（遅延初期化・getStripe()）
+  components/
+    LocaleToggle.tsx       # 言語切り替えボタン（Cookie設定 → ページリロード）
 sql/
   create_zerocost_keys.sql # テーブル定義（参考用）
 supabase/
   migrations/
-    20260228000000_create_zerocost_keys.sql  # Supabase CLI用マイグレーション（適用済み）
+    20260228000000_create_zerocost_keys.sql  # zerocost_keys テーブル作成（適用済み）
+    20260228100000_add_stripe_columns.sql    # stripe_customer_id / stripe_subscription_id / subscription_status 追加（適用済み）
 ```
 
 ## 環境変数
@@ -48,7 +76,10 @@ supabase/
 |--------|------|---------|
 | `SUPABASE_URL` | `https://hzofpqlhrlveqnjsoaae.supabase.co` | Vercel REST API で設定（⚠️ echo禁止） |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase service_role JWT | Vercel REST API で設定（⚠️ echo禁止） |
-| `NEXT_PUBLIC_APP_URL` | `https://zerocost-lp.vercel.app` | Vercel Dashboard or CLI（現在のコードでは未参照。OGタグ等の将来利用想定） |
+| `NEXT_PUBLIC_ROUTER_BASE` | zerocost-router の Base URL（`https://zerocost-router.dragonrondo.workers.dev`） | Vercel REST API で設定 |
+| `STRIPE_SECRET_KEY` | Stripe シークレットキー（`sk_test_...` or `sk_live_...`） | Vercel REST API で設定 |
+| `STRIPE_WEBHOOK_SECRET` | Stripe Webhook 署名シークレット（`whsec_...`） | Vercel REST API で設定 |
+| `NEXT_PUBLIC_APP_URL` | `https://zerocost-lp.vercel.app` | Vercel Dashboard or CLI（success_url / cancel_url の組み立てに使用） |
 
 ### ローカル開発
 
@@ -82,6 +113,39 @@ cp .env.local.example .env.local
 
 **注意:** DB INSERT に失敗してもキーは返す（ユーザー体験優先・コンソールにエラーログ）
 
+### `POST /api/stripe/checkout`
+
+LP の Pricing ボタン → `/upgrade/[plan]` のフォーム送信先。Stripe Checkout Session を作成して URL を返す。
+
+**リクエスト:**
+```json
+{ "email": "user@example.com", "plan": "basic" }
+```
+
+**レスポンス（成功）:**
+```json
+{ "url": "https://checkout.stripe.com/c/pay/cs_..." }
+```
+
+**フロー:**
+1. `plan` が `basic` / `pro` か検証
+2. メール形式バリデーション
+3. 既存 Stripe Customer 検索 → なければ新規作成
+4. `stripe.checkout.sessions.create()` で Checkout Session 作成（mode: subscription, currency: jpy, locale: ja）
+5. `session.url` を返却 → クライアントが `window.location.href` でリダイレクト
+
+**重複購入防止:** 同じプランで既に active な subscription があれば 409 を返す。
+
+### `POST /api/stripe/webhook`
+
+Stripe からの Webhook を受け取り、plan 更新・zc-key 発行を行う。
+
+**⚠️ raw body が必要:** `request.text()` を使う（`request.json()` だと署名検証が失敗する）
+
+**処理イベント:**
+- `checkout.session.completed` → zerocost_keys を upsert（plan / stripe_customer_id / stripe_subscription_id / subscription_status 更新・zc_key 未保有の場合は新規発行）
+- `customer.subscription.deleted` → plan を `free` に戻す・subscription_status を `canceled` に更新
+
 ## Supabase 設定
 
 - **プロジェクト:** `hzofpqlhrlveqnjsoaae` （ai-model-tracker プロジェクトを共用）
@@ -92,15 +156,19 @@ cp .env.local.example .env.local
 
 ```sql
 CREATE TABLE zerocost_keys (
-  id          uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
-  email       text        NOT NULL,
-  zc_key      text        UNIQUE NOT NULL,
-  plan        text        NOT NULL DEFAULT 'free',  -- 'free' / 'basic' / 'pro'
-  status      text        NOT NULL DEFAULT 'active',
-  created_at  timestamptz DEFAULT now(),
-  updated_at  timestamptz DEFAULT now()
+  id                      uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  email                   text        NOT NULL,
+  zc_key                  text        UNIQUE NOT NULL,
+  plan                    text        NOT NULL DEFAULT 'free',  -- 'free' / 'basic' / 'pro'
+  status                  text        NOT NULL DEFAULT 'active',
+  stripe_customer_id      text        UNIQUE,                   -- Stripe Customer ID
+  stripe_subscription_id  text        UNIQUE,                   -- Stripe Subscription ID
+  subscription_status     text        NOT NULL DEFAULT 'none',  -- 'none' / 'active' / 'canceled'
+  created_at              timestamptz DEFAULT now(),
+  updated_at              timestamptz DEFAULT now()
 );
 CREATE INDEX zerocost_keys_email_idx ON zerocost_keys (email);
+CREATE INDEX zerocost_keys_stripe_customer_idx ON zerocost_keys (stripe_customer_id);
 ```
 
 ### Supabase CLIでのマイグレーション操作
@@ -198,8 +266,48 @@ zerocost-router は本番 URL（`https://zerocost-router.dragonrondo.workers.dev
 | **zerocost-router** | `C:\Users\Tenormusica\zerocost-router` | `POST /v1/keys` で zc-key を発行。このLPが呼び出すルーター本体 |
 | **zerocost-llm-tracker** | `C:\Users\Tenormusica\zerocost-llm-tracker` | クォータ追跡Worker。ルーターがService Binding経由で参照 |
 
+## Stripe 連携
+
+### プラン・料金
+
+| プラン | 金額 | requests/月 | Stripe Product |
+|--------|------|------------|----------------|
+| Basic  | ¥500 | 10,000     | zerocost Basic |
+| Pro    | ¥1,500 | 100,000  | zerocost Pro   |
+
+**注意:** JPY は小数なし。`unit_amount` は整数（¥500 → `500`）。
+
+### Webhook 設定（本番）
+
+- **エンドポイント:** `https://zerocost-lp.vercel.app/api/stripe/webhook`
+- **登録イベント:**
+  - `checkout.session.completed`
+  - `customer.subscription.deleted`
+- Stripe Dashboard → Developers → Webhooks から確認・管理
+
+### テスト
+
+```bash
+# Stripe CLI でローカル転送
+stripe listen --forward-to localhost:3000/api/stripe/webhook
+
+# テストカード
+# 成功: 4242 4242 4242 4242 / 任意の未来の有効期限 / 任意のCVC
+# 要認証: 4000 0025 0000 3155
+# 失敗: 4000 0000 0000 9995
+```
+
+### 冪等性・安全設計
+
+- `stripe_subscription_id` に UNIQUE 制約 → 重複 INSERT 防止
+- 同一プランの active subscription がある場合は Checkout Session 作成前に 409 返却
+- Webhook は `stripe.webhooks.constructEvent()` で署名検証必須
+
 ## 学んだ教訓
 
 - **PowerShell `echo` + `vercel env add` = BOM汚染**: `\ufeff` が env var の先頭に混入し、Supabase URL が無効になる。Vercel REST API 経由で設定することで回避できる。
 - **Supabase クライアントの遅延初期化**: `createClient()` をモジュールレベルで実行すると Next.js ビルド時（env var が未設定）にエラーになる。`getSupabaseAdmin()` 関数内で初回呼び出し時に初期化する遅延パターンを使う。
 - **Vercel CLI の bash 非互換**: `npx vercel` を bash から実行すると出力なし・実行されないことがある。GitHub push での自動デプロイを基本とする。
+- **locale.ts と server-locale.ts の分離**: `next/headers` を使う関数（Cookie読み取り等）を `locale.ts` に混在させると Turbopack がクライアントバンドルに含めようとしてビルドエラーになる。サーバー専用の関数は `server-locale.ts` に分離する。
+- **Stripe Webhook は `request.text()` で raw body 取得**: `request.json()` で先に body を消費すると `stripe.webhooks.constructEvent()` の署名検証が失敗する。
+- **Stripe 重複チェックはプランキーベースで**: `price_data` を毎回動的生成する場合、amount_total での比較は額面が同じ別プランと区別できない。`session.metadata.plan` でプランを識別する。
