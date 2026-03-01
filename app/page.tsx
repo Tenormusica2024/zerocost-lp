@@ -1520,6 +1520,14 @@ export default function HomePage() {
             className="hover:text-slate-600 transition-colors"
           >
             {m.footerApiStatus}
+          </a>{" "}
+          ·{" "}
+          <a href="/terms" className="hover:text-slate-600 transition-colors">
+            {locale === "ja" ? "利用規約" : "Terms"}
+          </a>{" "}
+          ·{" "}
+          <a href="/privacy" className="hover:text-slate-600 transition-colors">
+            {locale === "ja" ? "プライバシーポリシー" : "Privacy"}
           </a>
         </p>
       </footer>
