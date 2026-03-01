@@ -17,9 +17,9 @@ export async function GET() {
   const admin = getSupabaseAdmin();
   const { data: keyRow, error } = await admin
     .from("zerocost_keys")
-    .select("zc_key, plan, status")
+    .select("zc_key, plan")
     .eq("email", user.email ?? "")
-    .single();
+    .maybeSingle();
 
   if (error || !keyRow) {
     return NextResponse.json(
@@ -32,6 +32,5 @@ export async function GET() {
     zcKey: keyRow.zc_key,
     plan: keyRow.plan ?? "free",
     email: user.email,
-    status: keyRow.status,
   });
 }

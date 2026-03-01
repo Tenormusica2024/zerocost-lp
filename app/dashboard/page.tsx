@@ -24,7 +24,7 @@ export default async function DashboardPage() {
     .from("zerocost_keys")
     .select("zc_key, plan, status")
     .eq("email", user.email ?? "")
-    .single();
+    .maybeSingle();
 
   const plan = keyRow?.plan ?? "free";
   const zcKey = keyRow?.zc_key ?? null;

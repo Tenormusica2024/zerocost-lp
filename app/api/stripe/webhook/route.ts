@@ -37,8 +37,9 @@ export async function POST(req: NextRequest) {
     const email   = session.metadata?.email;
     const plan    = session.metadata?.plan;
 
-    if (!email || !plan) {
-      console.error("Webhook: missing metadata", session.metadata);
+    const VALID_PLANS = ["basic", "pro"] as const;
+    if (!email || !plan || !(VALID_PLANS as readonly string[]).includes(plan)) {
+      console.error("Webhook: invalid metadata", session.metadata);
       return new Response("ok", { status: 200 }); // Stripe にエラーを返さない
     }
 

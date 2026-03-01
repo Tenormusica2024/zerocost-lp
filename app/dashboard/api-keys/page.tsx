@@ -61,9 +61,11 @@ export default function ApiKeysPage() {
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">{m.secretKeyDesc}</p>
           </div>
-          <span className="text-xs px-2 py-0.5 rounded bg-green-50 text-green-700 font-medium">
-            {m.active}
-          </span>
+          {data?.zcKey && (
+            <span className="text-xs px-2 py-0.5 rounded bg-green-50 text-green-700 font-medium">
+              {m.active}
+            </span>
+          )}
         </div>
 
         {loading ? (
