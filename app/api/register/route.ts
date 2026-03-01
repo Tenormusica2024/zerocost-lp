@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/app/lib/supabase/admin";
 
-const ROUTER_URL = "https://zerocost-router.dragonrondo.workers.dev";
+const ROUTER_URL =
+  process.env.NEXT_PUBLIC_ROUTER_BASE ??
+  "https://zerocost-router.dragonrondo.workers.dev";
 
 export async function POST(req: NextRequest) {
   let email: string;
